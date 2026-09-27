@@ -171,8 +171,6 @@ button:disabled, input:disabled, select:disabled, textarea:disabled { opacity: 0
 .floating-tool { position: fixed; z-index: 9; pointer-events: auto; }
 .orbit-lab-launcher, .catalogue-launcher { top: calc(var(--shell-top-height, 3.5rem) + 0.75rem); left: calc(var(--shell-left-offset, 0px) + 0.75rem); z-index: 13; transition: left 180ms ease; }
 .orbit-lab-launcher { display: grid; grid-template-columns: minmax(0, 1fr); width: 9.5rem; gap: 0.35rem; }
-/* The hint may be wider than the launcher; it overflows instead of widening Create orbit. */
-.orbit-lab-launcher > .first-visit-hint { justify-self: start; }
 .create-orbit-trigger { width: 100%; }
 .create-orbit-menu { display: grid; width: max-content; min-width: 100%; gap: 0.25rem; padding: 0.35rem; border: 1px solid var(--line-strong); border-radius: 9px; background: rgba(5, 14, 26, 0.94); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38); backdrop-filter: blur(14px); }
 .create-orbit-option { display: flex; align-items: center; gap: 0.55rem; min-height: 2.15rem; padding: 0.35rem 0.55rem; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--text); cursor: pointer; font-size: 0.72rem; font-weight: 650; text-align: left; }

@@ -165,10 +165,9 @@ export function english(f: LocaleFormat) {
       reload: 'Reload',
     },
 
-    /** One dismissible line in each mode's starting
+    /** One dismissible line in Real Objects' starting
      *  state, shown on every fresh load and gone after the first action. */
     firstVisit: {
-      orbitLab: 'Open Edit orbit on the left and drag its sliders to reshape this orbit.',
       realObjects: 'Enable the catalogue, then search for a satellite such as ISS.',
       dismiss: 'Dismiss hint',
     },

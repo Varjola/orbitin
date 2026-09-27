@@ -4,6 +4,14 @@ Versions follow `x.y.z`, set in the repository-root `VERSION` file: `x` is a
 major release, `y` a feature release and `z` a fix release. An overview is
 published at [orbitin.net/changelog](https://orbitin.net/changelog).
 
+## 1.0.1
+
+### Orbit Lab
+
+- On desktop, Edit orbit is open when the page loads, so the orbit's sliders
+  are ready to use. The first-visit hint that pointed to it is removed. Phones
+  are unchanged.
+
 ## 1.0.0
 
 Initial public release.

@@ -1,6 +1,5 @@
 import { text } from '../i18n/index.ts'
 import { html } from './markup.ts'
-import { firstVisitHintMarkup } from './firstVisitHint.ts'
 import type { OrbitCreationKind, UiCallbacks } from './uiTypes.ts'
 
 const CREATION_KINDS: readonly OrbitCreationKind[] = ['leo', 'meo', 'geo', 'heo']
@@ -10,9 +9,7 @@ export class OrbitLabLauncherView {
   private readonly trigger: HTMLButtonElement
   private readonly menu: HTMLElement
 
-  private readonly hint: HTMLElement
-
-  constructor(container: HTMLElement, callbacks: UiCallbacks, onDismissHint: () => void = () => {}) {
+  constructor(container: HTMLElement, callbacks: UiCallbacks) {
     this.root = container
     this.root.dataset.region = 'orbitLabLauncher'
     const t = text().orbitLab
@@ -20,9 +17,6 @@ export class OrbitLabLauncherView {
       <button id="create-orbit" class="floating-action primary-action create-orbit-trigger" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="create-orbit-menu">${t.createOrbit}</button>
       <div id="create-orbit-menu" class="create-orbit-menu" role="menu" hidden></div>
     `
-    this.root.insertAdjacentHTML('beforeend', firstVisitHintMarkup('orbit-lab-hint', text().firstVisit.orbitLab))
-    this.hint = this.root.querySelector<HTMLElement>('#orbit-lab-hint')!
-    this.hint.querySelector('button')!.addEventListener('click', () => onDismissHint())
     this.trigger = this.root.querySelector<HTMLButtonElement>('#create-orbit')!
     this.menu = this.root.querySelector<HTMLElement>('#create-orbit-menu')!
     for (const kind of CREATION_KINDS) {
@@ -54,9 +48,6 @@ export class OrbitLabLauncherView {
     this.trigger.disabled = loading || !enabled
     if (this.trigger.disabled || !visible) this.setOpen(false)
   }
-
-  /** The first-visit hint. */
-  setHintVisible(visible: boolean): void { this.hint.hidden = !visible }
 
   dispose(): void { this.root.textContent = '' }
 
