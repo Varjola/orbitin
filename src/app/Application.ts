@@ -81,7 +81,7 @@ import { CatalogueController } from './CatalogueController.ts'
 import { addCatalogueRecordsToScene } from './addCatalogueRecordsToScene.ts'
 import type { AddCatalogueRecordsOutcome } from '../state/catalogueAdditionOutcome.ts'
 import { sceneStatusMessage } from '../ui/sceneStatusWording.ts'
-import { initialShellState, mapCoversScene, NARROW_VIEWPORT_QUERY, setCatalogueWorkspaceOpen, shellAfterMapVisibilityChange, shellAfterModeChange, shellAfterPresentationChange, shellAfterViewportChange, shellForCameraFit, toggleInspector, toggleLeftDrawer, toggleMapMaximized, toggleSceneObjects, toggleTimeDrawer, toggleViewDrawer, type ShellState } from '../state/shellState.ts'
+import { mapCoversScene, openingShellState, NARROW_VIEWPORT_QUERY, setCatalogueWorkspaceOpen, shellAfterMapVisibilityChange, shellAfterModeChange, shellAfterPresentationChange, shellAfterViewportChange, shellForCameraFit, toggleInspector, toggleLeftDrawer, toggleMapMaximized, toggleSceneObjects, toggleTimeDrawer, toggleViewDrawer, type ShellState } from '../state/shellState.ts'
 import { occlusionInsets } from '../ui/shellGeometry.ts'
 import { layerBudgetMessage, sceneFullForManualAdd } from '../ui/shellWording.ts'
 import type { SceneMeasurementTarget } from './sceneMeasurementTarget.ts'
@@ -220,7 +220,7 @@ export class Application {
     this.desktopContainer = root.querySelector<HTMLElement>('#ui-root')!
     this.mobileContainer = root.querySelector<HTMLElement>('#mobile-ui-root')!
     this.narrowViewportQuery = window.matchMedia(NARROW_VIEWPORT_QUERY)
-    this.shell = initialShellState(this.narrowViewportQuery.matches)
+    this.shell = openingShellState(this.narrowViewportQuery.matches, this.presentation.presentation)
     this.narrowViewportQuery.addEventListener('change', this.onViewportChange)
     this.overlay = new LoadingOverlay(root)
     this.sceneRoot = new SceneRoot(root.querySelector<HTMLElement>('#scene-container')!)

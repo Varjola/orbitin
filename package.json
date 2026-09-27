@@ -1,7 +1,7 @@
 {
   "name": "orbitin",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Interactive orbital mechanics and satellite visualization in the browser: a 3D Earth, a 2D ground-track map and a published satellite catalogue.",
   "license": "MIT",
   "author": "Lauri Varjola",
