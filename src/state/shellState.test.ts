@@ -1,9 +1,16 @@
 import { expect, it } from 'vitest'
-import { initialShellState, mapCoversScene, shellAfterMapVisibilityChange, shellAfterPresentationChange, shellAfterModeChange, shellAfterViewportChange, shellForCameraFit, toggleInspector, toggleLeftDrawer, toggleMapMaximized, toggleSceneObjects, toggleTimeDrawer, toggleViewDrawer } from './shellState.ts'
+import { initialShellState, mapCoversScene, openingShellState, shellAfterMapVisibilityChange, shellAfterPresentationChange, shellAfterModeChange, shellAfterViewportChange, shellForCameraFit, toggleInspector, toggleLeftDrawer, toggleMapMaximized, toggleSceneObjects, toggleTimeDrawer, toggleViewDrawer } from './shellState.ts'
 
 it('starts both side regions retracted at every viewport size', () => {
   expect(initialShellState(false)).toEqual({ narrowViewport: false, leftDrawerOpen: false, inspectorOpen: false, timeDrawerOpen: false, viewDrawerOpen: false, mapMaximized: false, catalogueWorkspaceOpen: false, sceneObjectsExpanded: true })
   expect(initialShellState(true)).toEqual({ narrowViewport: true, leftDrawerOpen: false, inspectorOpen: false, timeDrawerOpen: false, viewDrawerOpen: false, mapMaximized: false, catalogueWorkspaceOpen: false, sceneObjectsExpanded: true })
+})
+
+it('opens the workspace drawer at page load only in a wide desktop window', () => {
+  expect(openingShellState(false, 'desktop')).toEqual({ ...initialShellState(false), leftDrawerOpen: true })
+  expect(openingShellState(true, 'desktop')).toEqual(initialShellState(true))
+  expect(openingShellState(false, 'mobile')).toEqual(initialShellState(false))
+  expect(openingShellState(true, 'mobile')).toEqual(initialShellState(true))
 })
 
 it('keeps the compact Time and View drawers mutually exclusive', () => {

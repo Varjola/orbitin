@@ -13,6 +13,10 @@ export interface ShellState {
   readonly sceneObjectsExpanded: boolean
 }
 export function initialShellState(narrowViewport: boolean): ShellState { return { narrowViewport, leftDrawerOpen: false, inspectorOpen: false, timeDrawerOpen: false, viewDrawerOpen: false, mapMaximized: false, catalogueWorkspaceOpen: false, sceneObjectsExpanded: true } }
+/** The shell at page load: a wide desktop window opens with the workspace
+ *  drawer showing, so Orbit Lab starts in Edit orbit. Narrow windows and
+ *  mobile start closed. */
+export function openingShellState(narrowViewport: boolean, presentation: 'desktop' | 'mobile'): ShellState { return { ...initialShellState(narrowViewport), leftDrawerOpen: presentation === 'desktop' && !narrowViewport } }
 export function toggleLeftDrawer(state: ShellState): ShellState {
   const leftDrawerOpen = !state.leftDrawerOpen
   return state.narrowViewport && leftDrawerOpen ? { ...state, leftDrawerOpen, inspectorOpen: false, timeDrawerOpen: false, viewDrawerOpen: false } : { ...state, leftDrawerOpen }

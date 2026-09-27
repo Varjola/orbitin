@@ -76,9 +76,10 @@ export class UiRoot implements ApplicationUi {
   private lastReadoutUpdate = -Infinity
   private selectedId: string | null = null
   private featuredPicks: readonly FeaturedPickTile[] = []
-  /** First-visit hints already done in this page load
-   *  (dismissed or acted on). Nothing is stored. */
-  private readonly hintsDone = new Set<'orbitLab' | 'realObjects'>()
+  /** The Real Objects first-visit hint is done for this page load (dismissed
+   *  or acted on). Nothing is stored. Orbit Lab has no hint: desktop opens
+   *  in Edit orbit. */
+  private realObjectsHintDone = false
 
   constructor(container: HTMLElement, callbacks: UiCallbacks, presets: readonly OrbitPresetId[]) {
     this.container = container
@@ -239,14 +240,14 @@ export class UiRoot implements ApplicationUi {
     const shellView = new AppShellView(container, { onModeChange: callbacks.onModeChange, onToggleLeftDrawer: callbacks.onToggleLeftDrawer, onToggleInspector: callbacks.onToggleInspector })
     const sensorView = new SensorSettingsView(container.ownerDocument, callbacks)
     const orbitLabView = new OrbitLabDrawerView(shellView.orbitLabRoot, callbacks, this.presets)
-    const orbitLabLauncher = new OrbitLabLauncherView(shellView.orbitLabLauncherRoot, callbacks, () => this.finishHint('orbitLab'))
+    const orbitLabLauncher = new OrbitLabLauncherView(shellView.orbitLabLauncherRoot, callbacks)
     const realObjectsView = new RealObjectsDrawerView(shellView.realObjectsRoot, callbacks)
     const objectList = new SceneObjectsView(shellView.sceneObjectsRoot, callbacks, () => shellView.focusWorkspaceToggle())
     const inspectorView = new SceneInspectorView(shellView.inspectorRoot, callbacks)
     const timeView = new TimeControlsView(shellView.timeRoot, callbacks)
     const viewControls = new ViewControlsView(shellView.viewRoot, callbacks)
     const catalogueView = new CatalogueWorkspaceView(shellView.catalogueRoot, callbacks)
-    const catalogueLauncher = new CatalogueLauncherView(shellView.catalogueLauncherRoot, { ...callbacks, onCatalogueLoad: () => { this.finishHint('realObjects'); callbacks.onCatalogueLoad() } }, () => this.finishHint('realObjects'))
+    const catalogueLauncher = new CatalogueLauncherView(shellView.catalogueLauncherRoot, { ...callbacks, onCatalogueLoad: () => { this.finishHint(); callbacks.onCatalogueLoad() } }, () => this.finishHint())
     let sceneOpenView: SceneOpenView | null = null
     const optionsMenu = new OptionsMenuView(shellView.optionsRoot, applicationBuildInfo, { onChooseSceneFile: () => sceneOpenView?.chooseFile(), onLocaleChange: callbacks.onLocaleChange, onOpenExample: callbacks.onOpenExample })
     const shareView = new ShareSceneView(shellView.optionsRoot, callbacks)
@@ -269,20 +270,18 @@ export class UiRoot implements ApplicationUi {
     views.shellView.dispose()
   }
 
-  private finishHint(hint: 'orbitLab' | 'realObjects'): void {
-    this.hintsDone.add(hint)
+  private finishHint(): void {
+    this.realObjectsHintDone = true
     this.renderHints()
   }
 
-  /** Orbit Lab's hint lasts until Edit orbit is opened; Real Objects' until
-   *  the catalogue is enabled or an object is added. */
+  /** The Real Objects hint lasts until the catalogue is enabled or an object
+   *  is added. */
   private renderHints(): void {
     const state = this.state
     if (!state) return
-    if (this.shell.leftDrawerOpen && state.activeMode === 'orbitLab') this.hintsDone.add('orbitLab')
-    if (state.realObjects.scene.objects.length > 0 || this.catalogueWorkspace.availability.kind === 'ready') this.hintsDone.add('realObjects')
-    this.views.orbitLabLauncher.setHintVisible(!this.loading && !this.hintsDone.has('orbitLab'))
-    this.views.catalogueLauncher.setHintVisible(!this.loading && !this.hintsDone.has('realObjects'))
+    if (state.realObjects.scene.objects.length > 0 || this.catalogueWorkspace.availability.kind === 'ready') this.realObjectsHintDone = true
+    this.views.catalogueLauncher.setHintVisible(!this.loading && !this.realObjectsHintDone)
   }
 
   private applyLoading(): void {

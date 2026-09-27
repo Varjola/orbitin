@@ -152,7 +152,6 @@ export function finnish(f: LocaleFormat): MessageCatalogue {
     },
 
     firstVisit: {
-      orbitLab: 'Avaa vasemmalta Muokkaa rataa ja muuta rataa liukusäätimillä.',
       realObjects: 'Ota luettelo käyttöön ja hae sitten satelliittia, esimerkiksi ISS.',
       dismiss: 'Sulje vihje',
     },
