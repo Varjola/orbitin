@@ -1,0 +1,45 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies and build output
+node_modules/
+dist/
+dist-ssr/
+
+# Large/local source assets. The map basemap README is the committed provenance
+# and hash record for an asset that ships unmodified, so it is kept.
+assets-source/*
+!assets-source/maps/
+assets-source/maps/*
+!assets-source/maps/README.md
+
+# Generated/local assets
+/public/catalog/
+
+# Local environment/config
+*.local
+.env
+.env.*
+!.env.example
+.dev.vars*
+# The example carries variable names and placeholders only, never values.
+!.dev.vars.example
+.wrangler/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

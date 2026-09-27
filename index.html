@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#050b15" />
+    <title>Orbitin · The Orbit Education Tool</title>
+    <meta name="description" content="See how orbits work and where real satellites are right now, on an interactive 3D Earth and a 2D ground-track map. Free, in the browser, for learning." />
+    <link rel="canonical" href="https://orbitin.net/" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=6" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Orbitin" />
+    <meta property="og:title" content="Orbitin · The Orbit Education Tool" />
+    <meta property="og:description" content="Reshape an orbit and watch its ground track, or see GPS, Galileo, the ISS and other real satellites where they are right now. Interactive 3D and 2D, made for learning." />
+    <meta property="og:url" content="https://orbitin.net/" />
+    <meta property="og:image" content="https://orbitin.net/og-image.png?v=3" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="627" />
+    <meta property="og:image:alt" content="The Orbitin wordmark beside Earth, seen over Europe with night falling in the east, and one satellite orbit drawn around it." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Orbitin · The Orbit Education Tool" />
+    <meta name="twitter:description" content="Reshape an orbit and watch its ground track, or see real satellites where they are right now. Interactive 3D and 2D, made for learning." />
+    <meta name="twitter:image" content="https://orbitin.net/og-image.png?v=3" />
+
+    <!-- Something branded is visible before the application's JavaScript
+         arrives; the application replaces it. -->
+    <style>
+      html, body { margin: 0; height: 100%; background: #01050b; }
+      .boot { position: fixed; inset: 0; display: grid; place-content: center; gap: 22px; justify-items: center; background: radial-gradient(circle at 50% 35%, #07101c 0%, #01050b 55%, #000 100%); }
+      .boot img { width: 218px; height: auto; opacity: 0.92; }
+      .boot-line { width: 160px; height: 2px; overflow: hidden; border-radius: 2px; background: rgba(145, 180, 216, 0.18); }
+      .boot-line i { display: block; width: 40%; height: 100%; background: #72d7e5; animation: boot-slide 1.4s ease-in-out infinite; }
+      @keyframes boot-slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+      @media (prefers-reduced-motion: reduce) { .boot-line i { width: 100%; animation: none; opacity: 0.5; } }
+      .boot-noscript { position: fixed; inset: auto 0 18% 0; margin: 0 auto; max-width: 30rem; padding: 0 1.5rem; color: #b9c9da; font: 15px/1.5 system-ui, sans-serif; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <div id="app"><div class="boot" role="status" aria-label="Loading Orbitin"><img src="/assets/branding/orbitin-wordmark.svg" width="291" height="64" alt="Orbitin" /><div class="boot-line" aria-hidden="true"><i></i></div></div></div>
+    <noscript><p class="boot-noscript">Orbitin is an interactive 3D explorer of orbits and real satellites. It needs JavaScript and a browser with WebGL2 graphics.</p></noscript>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

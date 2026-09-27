@@ -1,0 +1,210 @@
+{
+  "activeMode": "realObjects",
+  "format": "orbitin.scene",
+  "orbitLab": {
+    "objects": [],
+    "primaryId": null,
+    "selectedIds": []
+  },
+  "realObjects": {
+    "objects": [
+      {
+        "catalogId": "900001",
+        "display": {
+          "bodyVisible": true,
+          "groundTrackHistoryRecording": true,
+          "groundTrackVisible": true,
+          "orbitPathVisible": true,
+          "sensorGeometryVisible": false
+        },
+        "id": "catalogue-900001",
+        "kind": "catalogue",
+        "reachConstraint": {
+          "minimumGroundElevationRad": 0.05
+        },
+        "savedEpochUnixSeconds": 1789322400,
+        "savedSnapshotId": "20260914T001703Z-0123456789ab",
+        "sensor": {
+          "fieldOfViewHalfAngleRad": 0.2,
+          "maxOffNadirSteeringRad": 0.1
+        },
+        "style": {
+          "colorHex": 3368703,
+          "markerSizeRenderUnits": 0.031
+        }
+      },
+      {
+        "catalogId": "900003",
+        "display": {
+          "bodyVisible": true,
+          "groundTrackHistoryRecording": false,
+          "groundTrackVisible": false,
+          "orbitPathVisible": true,
+          "sensorGeometryVisible": false
+        },
+        "id": "catalogue-900003",
+        "kind": "catalogue",
+        "reachConstraint": {
+          "minimumGroundElevationRad": 0
+        },
+        "savedEpochUnixSeconds": 1789322400,
+        "savedSnapshotId": "20260914T001703Z-0123456789ab",
+        "sensor": {
+          "fieldOfViewHalfAngleRad": 0.08726646259971647,
+          "maxOffNadirSteeringRad": 0.05235987755982988
+        },
+        "style": {
+          "colorHex": 3368704,
+          "markerSizeRenderUnits": 0.02
+        }
+      },
+      {
+        "display": {
+          "bodyVisible": true,
+          "groundTrackHistoryRecording": false,
+          "groundTrackVisible": false,
+          "orbitPathVisible": true,
+          "sensorGeometryVisible": false
+        },
+        "id": "tle-1",
+        "kind": "tle",
+        "line1": "1 25544U 98067A   19156.50900463  .00003075  00000-0  59442-4 0  9992",
+        "line2": "2 25544  51.6433  59.2583 0008217  16.4489 347.6017 15.51174618173442",
+        "name": "Educational ISS <b>",
+        "reachConstraint": {
+          "minimumGroundElevationRad": 0
+        },
+        "sensor": {
+          "fieldOfViewHalfAngleRad": 0.08726646259971647,
+          "maxOffNadirSteeringRad": 0.05235987755982988
+        },
+        "style": {
+          "colorHex": 16750848,
+          "markerSizeRenderUnits": 0.02
+        }
+      },
+      {
+        "display": {
+          "bodyVisible": true,
+          "groundTrackHistoryRecording": false,
+          "groundTrackVisible": false,
+          "orbitPathVisible": true,
+          "sensorGeometryVisible": false
+        },
+        "id": "tle-2",
+        "kind": "tle",
+        "line1": "1 25544U 98067A   19156.50900463  .00003075  00000-0  59442-4 0  9992",
+        "line2": "2 25544  51.6433  59.2583 0008217  16.4489 347.6017 15.51174618173442",
+        "name": null,
+        "reachConstraint": {
+          "minimumGroundElevationRad": 0
+        },
+        "sensor": {
+          "fieldOfViewHalfAngleRad": 0.08726646259971647,
+          "maxOffNadirSteeringRad": 0.05235987755982988
+        },
+        "style": {
+          "colorHex": 16733440,
+          "markerSizeRenderUnits": 0.02
+        }
+      },
+      {
+        "display": {
+          "bodyVisible": true,
+          "groundTrackHistoryRecording": true,
+          "groundTrackVisible": true,
+          "orbitPathVisible": true,
+          "sensorGeometryVisible": false
+        },
+        "id": "omm-1",
+        "kind": "omm",
+        "reachConstraint": {
+          "minimumGroundElevationRad": 0.05
+        },
+        "record": {
+          "ARG_OF_PERICENTER": 40,
+          "BSTAR": 0.0001,
+          "CENTER_NAME": "Earth",
+          "CLASSIFICATION_TYPE": "U",
+          "ECCENTRICITY": 0.001,
+          "ELEMENT_SET_NO": 999,
+          "EPHEMERIS_TYPE": 0,
+          "EPOCH": "2026-03-20T12:00:00.123Z",
+          "INCLINATION": 51,
+          "MEAN_ANOMALY": 220,
+          "MEAN_ELEMENT_THEORY": "SGP4",
+          "MEAN_MOTION": 15.2,
+          "MEAN_MOTION_DDOT": 0,
+          "MEAN_MOTION_DOT": 0.00001,
+          "NORAD_CAT_ID": "700001",
+          "OBJECT_ID": "2026-001A",
+          "OBJECT_NAME": "Manual OMM",
+          "RA_OF_ASC_NODE": 119.99999999999999,
+          "REF_FRAME": "TEME",
+          "REV_AT_EPOCH": 12345,
+          "TIME_SYSTEM": "UTC"
+        },
+        "sensor": {
+          "fieldOfViewHalfAngleRad": 0.2,
+          "maxOffNadirSteeringRad": 0.1
+        },
+        "style": {
+          "colorHex": 52360,
+          "markerSizeRenderUnits": 0.031
+        }
+      },
+      {
+        "display": {
+          "bodyVisible": true,
+          "groundTrackHistoryRecording": false,
+          "groundTrackVisible": false,
+          "orbitPathVisible": true,
+          "sensorGeometryVisible": false
+        },
+        "id": "omm-2",
+        "kind": "omm",
+        "reachConstraint": {
+          "minimumGroundElevationRad": 0
+        },
+        "record": {
+          "ARG_OF_PERICENTER": 20,
+          "BSTAR": 0,
+          "CENTER_NAME": "Earth",
+          "ECCENTRICITY": 0.01,
+          "EPHEMERIS_TYPE": 0,
+          "EPOCH": "2026-03-21T00:00:00.000Z",
+          "INCLINATION": 55,
+          "MEAN_ANOMALY": 29.999999999999996,
+          "MEAN_ELEMENT_THEORY": "SGP4",
+          "MEAN_MOTION": 2.0050000000000003,
+          "MEAN_MOTION_DDOT": 0,
+          "MEAN_MOTION_DOT": 0,
+          "NORAD_CAT_ID": "700002",
+          "OBJECT_NAME": "Minimal OMM",
+          "RA_OF_ASC_NODE": 10,
+          "REF_FRAME": "TEME",
+          "TIME_SYSTEM": "UTC"
+        },
+        "sensor": {
+          "fieldOfViewHalfAngleRad": 0.08726646259971647,
+          "maxOffNadirSteeringRad": 0.05235987755982988
+        },
+        "style": {
+          "colorHex": 43622,
+          "markerSizeRenderUnits": 0.02
+        }
+      }
+    ],
+    "primaryId": "catalogue-900001",
+    "selectedIds": [
+      "omm-1",
+      "catalogue-900001"
+    ]
+  },
+  "simulation": null,
+  "version": 1,
+  "view": {
+    "groundTrackMapVisible": true,
+    "scaleMarkersWithZoom": false
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // DELIBERATELY UNDEPLOYABLE. Orbitin has four permanent Workers and one
+  // test-only fixture, each with its own complete configuration file. Always
+  // pass -c, or use the npm deploy scripts:
+  //   wrangler.orbitin.jsonc            orbitin                    (production frontend)
+  //   wrangler.orbitin-dev.jsonc        orbitin-dev                (development frontend)
+  //   wrangler.catalogue.jsonc          orbitin-catalogue          (sole catalogue producer)
+  //   wrangler.catalogue-monitor.jsonc  orbitin-catalogue-monitor  (producer's tail monitor)
+  //   wrangler.catalogue-fixture.jsonc  orbitin-catalogue-fixture  (test only)
+  // This file has no entry point and no assets so that a command without -c
+  // fails instead of auto-configuring or selecting a real Worker.
+  "name": "orbitin-select-worker-config",
+  "compatibility_date": "2026-09-03"
+}

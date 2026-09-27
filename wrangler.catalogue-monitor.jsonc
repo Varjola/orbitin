@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // orbitin-catalogue-monitor: the producer's Tail Worker. It
+  // alerts the operator when an orbitin-catalogue invocation ends in anything
+  // but ok, and when the producer stops running. It binds only its own bucket,
+  // never the catalogue bucket, and holds no Space-Track secret. Deploy it only
+  // from the released main branch, before the producer that names it in
+  // tail_consumers. No static assets and no public URL.
+  // CATALOGUE_ALERT_EMAIL is declared by name only; the recipient and sender
+  // are the CATALOGUE_ALERT_TO and CATALOGUE_ALERT_FROM secrets. Without both
+  // secrets it records heartbeats and sends nothing.
+  "name": "orbitin-catalogue-monitor",
+  "main": "./workers/catalogue-monitor/index.ts",
+  "compatibility_date": "2026-09-03",
+  "observability": { "enabled": true },
+  "workers_dev": false,
+  "preview_urls": false,
+  "triggers": { "crons": ["47 * * * *"] },
+  "r2_buckets": [
+    { "binding": "MONITOR_BUCKET", "bucket_name": "orbitin-catalogue-monitor", "preview_bucket_name": "orbitin-catalogue-monitor-preview" }
+  ],
+  "send_email": [{ "name": "CATALOGUE_ALERT_EMAIL" }]
+}

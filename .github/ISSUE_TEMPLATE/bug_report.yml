@@ -1,0 +1,37 @@
+name: Bug report
+description: Something in Orbitin does not work or shows something wrong.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time. Orbitin does not accept code contributions, but bug reports help.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Scene link
+      description: If the problem shows in a scene, Share → Copy link and paste it here.
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: e.g. Chrome 140 on Windows 11, or the LinkedIn app on an Android phone
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Shown in About Orbitin (menu ⋮ → About Orbitin).
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Screenshots, the source you compared against, messages shown.

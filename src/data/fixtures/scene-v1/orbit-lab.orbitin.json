@@ -1,0 +1,135 @@
+{
+  "activeMode": "orbitLab",
+  "format": "orbitin.scene",
+  "orbitLab": {
+    "objects": [
+      {
+        "display": {
+          "bodyVisible": true,
+          "groundTrackHistoryRecording": false,
+          "groundTrackVisible": false,
+          "orbitPathVisible": true,
+          "sensorGeometryVisible": false
+        },
+        "editingLock": "none",
+        "geometry": {
+          "argOfPeriapsisRad": 0,
+          "eccentricity": 0.1,
+          "inclinationRad": 0.7853981633974483,
+          "raanRad": 0,
+          "semiMajorAxisKm": 10000
+        },
+        "id": "orbit-1",
+        "kind": "keplerian",
+        "name": "Cosmo Mariner",
+        "notes": "Ideal two-body Keplerian demonstration",
+        "phase": {
+          "meanAnomalyAtReferenceRad": 0,
+          "referenceUnixSeconds": 1774008000
+        },
+        "propagation": "idealTwoBody",
+        "reachConstraint": {
+          "minimumGroundElevationRad": 0
+        },
+        "sensor": {
+          "fieldOfViewHalfAngleRad": 0.08726646259971647,
+          "maxOffNadirSteeringRad": 0.05235987755982988
+        },
+        "style": {
+          "colorHex": 16762967,
+          "markerSizeRenderUnits": 0.02
+        }
+      },
+      {
+        "display": {
+          "bodyVisible": true,
+          "groundTrackHistoryRecording": true,
+          "groundTrackVisible": true,
+          "orbitPathVisible": true,
+          "sensorGeometryVisible": true
+        },
+        "editingLock": "sunSynchronous",
+        "geometry": {
+          "argOfPeriapsisRad": 0,
+          "eccentricity": 0,
+          "inclinationRad": 1.7209489337559125,
+          "raanRad": 2.7090402180076154,
+          "semiMajorAxisKm": 7178.137
+        },
+        "id": "orbit-2",
+        "kind": "keplerian",
+        "name": "Sun-synchronous Ω",
+        "notes": "A circular orbit 800 km above Earth whose plane drifts eastward at the same rate the mean Sun does, so it crosses the equator southbound at 10:30 and northbound at 22:30 local mean solar time. Its inclination is solved from its altitude rather than quoted, and its RAAN is solved from that crossing time at the moment you add it — so adding it on a different date gives a different RAAN.",
+        "phase": {
+          "meanAnomalyAtReferenceRad": 0,
+          "referenceUnixSeconds": 1774008000
+        },
+        "propagation": "j2Secular",
+        "reachConstraint": {
+          "minimumGroundElevationRad": 0.05
+        },
+        "sensor": {
+          "fieldOfViewHalfAngleRad": 0.2,
+          "maxOffNadirSteeringRad": 0.1
+        },
+        "style": {
+          "colorHex": 11306743,
+          "markerSizeRenderUnits": 0.031
+        }
+      },
+      {
+        "display": {
+          "bodyVisible": true,
+          "groundTrackHistoryRecording": false,
+          "groundTrackVisible": false,
+          "orbitPathVisible": true,
+          "sensorGeometryVisible": false
+        },
+        "editingLock": "none",
+        "geometry": {
+          "argOfPeriapsisRad": 0,
+          "eccentricity": 0.1234567890123,
+          "inclinationRad": 0.7853981633974483,
+          "raanRad": 0,
+          "semiMajorAxisKm": 10000
+        },
+        "id": "orbit-3",
+        "kind": "keplerian",
+        "name": "No notes",
+        "notes": null,
+        "phase": {
+          "meanAnomalyAtReferenceRad": 0,
+          "referenceUnixSeconds": 1774008000
+        },
+        "propagation": "idealTwoBody",
+        "reachConstraint": {
+          "minimumGroundElevationRad": 0
+        },
+        "sensor": {
+          "fieldOfViewHalfAngleRad": 0.08726646259971647,
+          "maxOffNadirSteeringRad": 0.05235987755982988
+        },
+        "style": {
+          "colorHex": 16762967,
+          "markerSizeRenderUnits": 0.02
+        }
+      }
+    ],
+    "primaryId": "orbit-3",
+    "selectedIds": [
+      "orbit-2",
+      "orbit-3"
+    ]
+  },
+  "realObjects": {
+    "objects": [],
+    "primaryId": null,
+    "selectedIds": []
+  },
+  "simulation": null,
+  "version": 1,
+  "view": {
+    "groundTrackMapVisible": false,
+    "scaleMarkersWithZoom": true
+  }
+}

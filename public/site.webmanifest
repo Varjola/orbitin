@@ -1,0 +1,15 @@
+{
+  "name": "Orbitin",
+  "short_name": "Orbitin",
+  "description": "See how orbits work and where real satellites are right now, on an interactive 3D Earth and a 2D ground-track map.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#01050b",
+  "theme_color": "#050b15",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

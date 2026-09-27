@@ -1,0 +1,46 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #edf4ff;
+  background: #01050b;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --panel: rgba(5, 14, 26, 0.88);
+  --panel-solid: #091625;
+  --surface: rgba(18, 35, 53, 0.82);
+  --surface-hover: rgba(26, 49, 70, 0.96);
+  --line: rgba(159, 194, 226, 0.18);
+  --line-strong: rgba(159, 194, 226, 0.3);
+  --text: #edf4ff;
+  --muted: #90a7bf;
+  --muted-strong: #b9c9da;
+  --cyan: #72d7e5;
+  --cyan-bright: #a9f3fa;
+  --gold: #f2c879;
+  --danger: #ffb4ad;
+  --focus-ring: #f2c879;
+  --control-height: 2.125rem;
+}
+
+* { box-sizing: border-box; }
+html, body, #app { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+/* No pull-to-refresh, and no text inflation on rotation;
+   the learner's own text-size setting still applies. */
+html, body { overscroll-behavior: none; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background: radial-gradient(circle at 50% 35%, #07101c 0%, #01050b 55%, #000 100%); }
+button, input, select, textarea { font: inherit; }
+button { color: inherit; }
+a { color: var(--cyan-bright); }
+
+.app-shell { position: relative; width: 100%; height: 100%; overflow: hidden; }
+.scene-container { position: absolute; inset: 0; background: #000000; }
+.scene-canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.map-container { position: absolute; inset: 0; pointer-events: none; }
+.ui-root { position: absolute; inset: 0; pointer-events: none; display: grid; grid-template-columns: clamp(18rem, 22vw, 20rem) minmax(10rem, 1fr) clamp(19rem, 23vw, 21.5rem); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "top top top" "workspace . inspector" "time . view"; gap: 0.75rem; padding: max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left)); transition: grid-template-columns 180ms ease; }
+.ui-root[hidden] { display: none; }
+.ui-root.has-retracted-workspace { grid-template-columns: 3.25rem minmax(10rem, 1fr) clamp(19rem, 23vw, 21.5rem); }
+.ui-root.has-retracted-inspector { grid-template-columns: clamp(18rem, 22vw, 20rem) minmax(10rem, 1fr) 3.25rem; }
+.ui-root.has-retracted-workspace.has-retracted-inspector { grid-template-columns: 3.25rem minmax(10rem, 1fr) 3.25rem; }
+.fatal-error { display: grid; place-content: center; height: 100%; padding: 2rem; color: #edf4ff; text-align: center; }
+.fatal-error p { color: var(--muted); }

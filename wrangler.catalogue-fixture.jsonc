@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // orbitin-catalogue-fixture: TEST ONLY. Offline fixture provider, preview
+  // bucket only, no cron, no credentials and no public URL. If deployed for a
+  // test, delete it afterwards with `npx wrangler delete orbitin-catalogue-fixture`.
+  "name": "orbitin-catalogue-fixture",
+  "main": "./workers/catalogue/index.ts",
+  "compatibility_date": "2026-09-03",
+  "observability": { "enabled": true },
+  "workers_dev": false,
+  "preview_urls": false,
+  "triggers": { "crons": [] },
+  "vars": { "CATALOGUE_ENABLED": "true", "CATALOGUE_PROVIDER": "fixture", "CATALOGUE_RETRIEVAL": "gp-sweep", "CATALOGUE_CONFIG_REVISION": "fixture-gp-sweep-1" },
+  "r2_buckets": [
+    { "binding": "CATALOGUE_BUCKET", "bucket_name": "orbitin-catalogue-preview", "preview_bucket_name": "orbitin-catalogue-preview" }
+  ]
+}

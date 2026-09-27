@@ -1,0 +1,134 @@
+{
+  "mode": "realWorldObjects",
+  "objects": [
+    {
+      "id": "demo-satellite",
+      "name": "Explorer 01",
+      "source": {
+        "kind": "keplerian",
+        "geometry": {
+          "semiMajorAxisKm": 10000,
+          "eccentricity": 0.1,
+          "inclinationRad": 0.7853981633974483,
+          "raanRad": 0,
+          "argOfPeriapsisRad": 0
+        },
+        "phase": {
+          "referenceInstant": {
+            "unixSeconds": 1774008000
+          },
+          "meanAnomalyAtReferenceRad": 0
+        }
+      },
+      "propagation": {
+        "kind": "idealTwoBody"
+      },
+      "editingLock": {
+        "kind": "none"
+      },
+      "style": {
+        "colorHex": 16762967,
+        "markerSizeRenderUnits": 0.02
+      },
+      "sensor": {
+        "fieldOfViewHalfAngleRad": 0.08726646259971647,
+        "maxOffNadirSteeringRad": 0.05235987755982988
+      },
+      "reachConstraint": {
+        "minimumGroundElevationRad": 0
+      },
+      "display": {
+        "orbitPathVisible": true,
+        "bodyVisible": true,
+        "groundTrackVisible": false,
+        "groundTrackHistoryRecording": false,
+        "sensorGeometryVisible": false
+      },
+      "notes": "Ideal two-body Keplerian demonstration"
+    },
+    {
+      "id": "omm-1",
+      "name": "ISS (ZARYA)",
+      "source": {
+        "kind": "omm",
+        "definition": {
+          "format": "omm-keyed-json",
+          "name": "ISS (ZARYA)",
+          "internationalDesignator": "1998-067A",
+          "classification": "U",
+          "objectId": "1998-067A",
+          "ephemerisType": 0,
+          "elementSetNumber": 999,
+          "revolutionNumberAtEpoch": 58539,
+          "meanElements": {
+            "catalogId": "25544",
+            "epoch": {
+              "unixSeconds": 1789272767.894
+            },
+            "meanMotionRadPerMinute": 0.06759210473985677,
+            "meanMotionFirstDerivativeRadPerMinuteSquared": 1.4841358812965672e-10,
+            "meanMotionSecondDerivativeRadPerMinuteCubed": 0,
+            "bstarPerEarthRadius": 0.000096694874,
+            "eccentricity": 0.00049173,
+            "inclinationRad": 0.9011257101094363,
+            "raanRad": 3.920307951281355,
+            "argumentOfPerigeeRad": 2.3504872635383234,
+            "meanAnomalyRad": 3.9351223059722833,
+            "nominalPeriodSeconds": 5577.443103476497
+          },
+          "provenance": {
+            "cataloguePublishedAtUtc": "2026-09-13T12:17:11.581Z",
+            "groups": [
+              "space-stations"
+            ],
+            "kind": "catalogue",
+            "providerId": "space-track",
+            "providerRetrievedAtUtc": "2026-09-13T12:17:11.581Z",
+            "snapshotId": "20260913T121711Z-8f039dc45340"
+          }
+        }
+      },
+      "propagation": {
+        "kind": "sgp4"
+      },
+      "editingLock": {
+        "kind": "none"
+      },
+      "style": {
+        "colorHex": 5682409,
+        "markerSizeRenderUnits": 0.02
+      },
+      "sensor": {
+        "fieldOfViewHalfAngleRad": 0.08726646259971647,
+        "maxOffNadirSteeringRad": 0.05235987755982988
+      },
+      "reachConstraint": {
+        "minimumGroundElevationRad": 0
+      },
+      "display": {
+        "bodyVisible": true,
+        "orbitPathVisible": true,
+        "groundTrackVisible": false,
+        "groundTrackHistoryRecording": false,
+        "sensorGeometryVisible": false
+      },
+      "notes": "Real-world OMM propagated with SGP4/SDP4"
+    }
+  ],
+  "selectedObjectId": "omm-1",
+  "simulation": {
+    "playing": true,
+    "reversed": false,
+    "speedMultiplier": 200,
+    "currentInstant": {
+      "unixSeconds": 1789272767.894
+    }
+  },
+  "view": {
+    "scaleMarkersWithZoom": true,
+    "groundTrackMapVisible": false
+  },
+  "lastConstraint": {
+    "kind": "none"
+  }
+}

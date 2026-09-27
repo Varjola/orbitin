@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs>
+  <radialGradient id="planet" gradientUnits="userSpaceOnUse" cx="23" cy="22" r="35">
+    <stop offset="0" stop-color="#f5f5f5"/><stop offset=".62" stop-color="#e9e9e9"/>
+    <stop offset=".86" stop-color="#ccc"/><stop offset="1" stop-color="#999"/>
+  </radialGradient>
+  <linearGradient id="tip" gradientUnits="userSpaceOnUse" x1="36" y1="40" x2="64" y2="64">
+    <stop offset="0" stop-color="white"/><stop offset=".55" stop-color="white"/><stop offset="1" stop-color="black"/>
+  </linearGradient>
+  <mask id="fade"><rect width="64" height="64" fill="url(#tip)"/></mask>
+  <clipPath id="silhouette" transform="translate(32 32) scale(.06) rotate(215) translate(-795 -493)"><path d="M407 481 C414 275 578 112 795 112 C1011 112 1184 280 1184 498 C1184 565 1172 627 1148 681 C1258 681 1310 653 1295 610 C1284 578 1252 546 1226 525 L1227 469 C1369 548 1472 620 1451 681 C1415 788 983 745 651 632 C437 560 254 445 215 386 C194 354 263 384 319 404 C226 376 256 416 407 481 Z"/><path d="M411 563 C547 645 704 693 864 738 C1034 785 1018 826 915 858 C874 870 833 875 794 875 C606 875 448 742 411 563 Z"/></clipPath>
+</defs><g mask="url(#fade)"><rect width="64" height="64" fill="url(#planet)" clip-path="url(#silhouette)"/></g></svg>

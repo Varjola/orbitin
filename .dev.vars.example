@@ -1,0 +1,22 @@
+# Example local override for a local Wrangler Worker session. Copy to
+# `.dev.vars` only if a diagnostic genuinely needs a live provider run;
+# `.dev.vars` is ignored by Git, is loaded by every local `wrangler dev`
+# session regardless of the selected config, and must never be committed or
+# deployed.
+#
+# Normal local development and the whole test suite use the offline fixture
+# provider and need no credentials at all.
+#
+# VARIABLE NAMES ONLY. Never put a real identity or password in this file.
+# In the deployed producer these two values are Cloudflare Worker secrets.
+# Set them only for the dedicated producer:
+#   npx wrangler secret put SPACETRACK_IDENTITY --name orbitin-catalogue
+#   npx wrangler secret put SPACETRACK_PASSWORD --name orbitin-catalogue
+
+CATALOGUE_ENABLED = "true"
+CATALOGUE_PROVIDER = "fixture"
+CATALOGUE_CONFIG_REVISION = "local"
+
+# Only needed when CATALOGUE_PROVIDER is "space-track":
+# SPACETRACK_IDENTITY = "<your Space-Track account email>"
+# SPACETRACK_PASSWORD = "<your Space-Track password>"

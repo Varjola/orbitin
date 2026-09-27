@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // orbitin-catalogue: the ONLY automatic catalogue producer and the ONLY
+  // Worker allowed to contact Space-Track. Deploy it only from the released
+  // main branch. No static assets and no public URL.
+  // Secrets are never stored here; set them with `wrangler secret put` for this
+  // Worker only. Do not change CATALOGUE_CONFIG_REVISION: it discards the
+  // in-progress sweep and resets provider protection state.
+  // Operator alerts (optional): CATALOGUE_ALERT_EMAIL is declared by name only,
+  // so it reaches only addresses verified in the deploying Cloudflare account;
+  // the recipient and sender are the CATALOGUE_ALERT_TO and
+  // CATALOGUE_ALERT_FROM secrets. Without both secrets no mail is sent.
+  // tail_consumers sends each invocation's outcome to orbitin-catalogue-monitor,
+  // which must be deployed first.
+  "name": "orbitin-catalogue",
+  "main": "./workers/catalogue/index.ts",
+  "compatibility_date": "2026-09-03",
+  "observability": { "enabled": true },
+  "workers_dev": false,
+  "preview_urls": false,
+  "triggers": { "crons": ["17 * * * *"] },
+  "vars": { "CATALOGUE_ENABLED": "true", "CATALOGUE_PROVIDER": "space-track", "CATALOGUE_RETRIEVAL": "gp-sweep", "CATALOGUE_CONFIG_REVISION": "space-track-gp-sweep-2" },
+  "r2_buckets": [
+    { "binding": "CATALOGUE_BUCKET", "bucket_name": "orbitin-catalogue", "preview_bucket_name": "orbitin-catalogue-preview" }
+  ],
+  "send_email": [{ "name": "CATALOGUE_ALERT_EMAIL" }],
+  "tail_consumers": [{ "service": "orbitin-catalogue-monitor" }]
+}

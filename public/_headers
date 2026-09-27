@@ -1,0 +1,13 @@
+# Security headers for every static response.
+# Cloudflare Workers Static Assets applies this file; the Worker's own
+# responses (/catalog/*, /events/*) set their headers in code.
+# 'unsafe-eval' is needed by the Basis texture transcoder: its Emscripten
+# glue creates functions at run time inside a blob worker, which inherits
+# this policy. No page content is ever built from untrusted HTML.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval' https://static.cloudflareinsights.com; worker-src 'self' blob:; connect-src 'self' https://cloudflareinsights.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(self), camera=(), microphone=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+  Strict-Transport-Security: max-age=31536000

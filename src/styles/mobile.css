@@ -1,0 +1,419 @@
+/* The phone presentation. Every rule is scoped under
+   `.mobile-ui-root` or `.app-shell[data-presentation="mobile"]` and uses the
+   base.css tokens, plus the touch target, the platform font stack and the
+   mobile type scale. Nothing on mobile is smaller than 12 px. */
+
+.app-shell[data-presentation="mobile"] {
+  --touch-target: 2.75rem;
+  --m-font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --m-text-caption: 0.75rem;
+  --m-text-secondary: 0.875rem;
+  --m-text-label: 0.9375rem;
+  --m-text-body: 1rem;
+  --m-text-heading: 1.125rem;
+  --m-text-live: 1.125rem;
+  --m-text-value: 1.375rem;
+  --m-gutter: 0.5rem;
+  --m-safe-top: env(safe-area-inset-top, 0px);
+  --m-safe-right: env(safe-area-inset-right, 0px);
+  --m-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --m-safe-left: env(safe-area-inset-left, 0px);
+  --m-topbar-height: calc(3rem + var(--m-safe-top));
+  --m-dock-height: calc(3.5rem + var(--m-safe-bottom));
+  --m-panel-surface: #091625;
+  --m-accent: #72d7e5;
+  --m-accent-soft: rgba(114, 215, 229, 0.18);
+  font-family: var(--m-font);
+}
+
+@media (orientation: landscape) {
+  .app-shell[data-presentation="mobile"] { --m-topbar-height: calc(2.75rem + var(--m-safe-top)); }
+}
+
+/* No text selection or long-press callout on the canvas and
+   the controls; no double-tap zoom; no grey tap flash. */
+.app-shell[data-presentation="mobile"] .scene-canvas,
+.app-shell[data-presentation="mobile"] .map-frame,
+.mobile-ui-root { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.mobile-ui-root :is(button, input, label, select, [role="slider"]) { -webkit-tap-highlight-color: transparent; }
+.mobile-ui-root :is(button, input, label, select) { touch-action: manipulation; }
+.mobile-ui-root input[type="search"], .mobile-ui-root input[type="text"] { -webkit-user-select: text; user-select: text; }
+
+.mobile-ui-root { position: absolute; z-index: 10; inset: 0; overflow: hidden; color: var(--text); font-family: var(--m-font); font-size: var(--m-text-body); line-height: 1.3; pointer-events: none; }
+.mobile-ui-root[hidden] { display: none; }
+.mobile-ui-root :is(h2, h3, p) { margin: 0; }
+.mobile-ui-root :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+/* Icons and shared controls. */
+.mobile-ui-root .m-icon { width: 1.5rem; height: 1.5rem; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.mobile-ui-root .m-icon .is-filled { fill: currentColor; stroke: none; }
+.m-icon-button { display: inline-grid; flex: none; place-items: center; width: var(--touch-target); height: var(--touch-target); padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--text); cursor: pointer; }
+.m-icon-button:disabled, .m-button:disabled, .m-dock-button:disabled, .m-pill:disabled { opacity: 0.45; cursor: default; }
+.m-button { display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem; min-width: var(--touch-target); min-height: var(--touch-target); padding: 0 0.875rem; border: 1px solid var(--line-strong); border-radius: 0.75rem; background: var(--surface); color: var(--text); font: 600 var(--m-text-body)/1.15 var(--m-font); cursor: pointer; }
+.m-button.is-primary { border-color: transparent; background: var(--m-accent); color: #04121c; }
+.m-button.is-danger { color: var(--danger); }
+.m-button-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.m-line { color: var(--muted-strong); font-size: var(--m-text-secondary); line-height: 1.3; }
+.m-line:empty { display: none; }
+.m-caption { color: var(--muted); font-size: var(--m-text-caption); line-height: 1.3; }
+.m-field { display: grid; gap: 0.25rem; }
+.m-field-label { color: var(--muted-strong); font-size: var(--m-text-secondary); }
+.m-field input { width: 100%; min-height: var(--touch-target); padding: 0 0.75rem; border: 1px solid var(--line-strong); border-radius: 0.625rem; background: #0d1d30; color: var(--text); font: 400 var(--m-text-body)/1.3 var(--m-font); color-scheme: dark; }
+.m-switch { position: relative; display: inline-flex; align-items: center; gap: 0.5rem; min-height: var(--touch-target); cursor: pointer; }
+.m-switch input { position: absolute; width: var(--touch-target); height: var(--touch-target); margin: 0; opacity: 0; cursor: pointer; }
+.m-switch-track { position: relative; width: 2.75rem; height: 1.625rem; flex: none; border-radius: 999px; background: rgba(145, 180, 216, 0.28); transition: background 150ms ease; }
+.m-switch-track::after { content: ""; position: absolute; top: 0.1875rem; left: 0.1875rem; width: 1.25rem; height: 1.25rem; border-radius: 50%; background: #dbe7f3; transition: transform 150ms ease; }
+.m-switch input:checked + .m-switch-track { background: var(--m-accent); }
+.m-switch input:checked + .m-switch-track::after { transform: translateX(1.125rem); background: #04121c; }
+.m-switch input:focus-visible + .m-switch-track { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.m-switch input:disabled + .m-switch-track { opacity: 0.45; }
+.m-switch-label { font-size: var(--m-text-body); line-height: 1.15; }
+.m-segments { display: inline-flex; gap: 0.25rem; padding: 0; border: 1px solid var(--line); border-radius: 0.875rem; background: var(--surface); }
+.m-segments button { min-width: var(--touch-target); min-height: var(--touch-target); padding: 0 0.875rem; border: 0; border-radius: 0.6875rem; background: transparent; color: var(--muted-strong); font: 600 var(--m-text-body)/1.15 var(--m-font); cursor: pointer; }
+.m-segments button[aria-pressed="true"] { background: var(--m-accent); color: #04121c; }
+
+/* Top bar: the mark, the mode switch and the menu button. */
+.m-topbar { position: absolute; top: 0; right: 0; left: 0; display: flex; align-items: center; gap: 0.25rem; height: var(--m-topbar-height); padding: var(--m-safe-top) calc(var(--m-gutter) + var(--m-safe-right)) 0 calc(var(--m-gutter) + var(--m-safe-left)); background: transparent; pointer-events: none; }
+.m-topbar > * { pointer-events: auto; }
+.m-mark { width: 1.75rem; height: 1.75rem; flex: none; margin: 0 0.5rem 0 0.25rem; }
+.m-mode-switch { display: flex; flex: 1 1 auto; min-width: 0; max-width: 20rem; margin: 0 auto; padding: 0; border: 1px solid var(--line); border-radius: 999px; background: rgba(18, 35, 53, 0.9); }
+.m-mode { flex: 1 1 0; min-width: 0; min-height: var(--touch-target); padding: 0 0.625rem; overflow: hidden; border: 0; border-radius: 999px; background: transparent; color: var(--muted-strong); font: 600 var(--m-text-label)/1.15 var(--m-font); text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.m-mode[aria-pressed="true"] { background: var(--m-accent); color: #04121c; }
+
+/* View tools: three round buttons below the top bar. The
+   menu button above them matches them. */
+.m-view-tools { position: absolute; top: calc(var(--m-topbar-height) + 0.5rem); right: calc(var(--m-gutter) + var(--m-safe-right)); display: grid; gap: 0.5rem; pointer-events: none; }
+.m-view-tools .m-icon-button, .m-topbar .m-menu-button { background: rgba(9, 22, 37, 0.86); box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.35); pointer-events: auto; }
+.m-topbar .m-menu-button[aria-expanded="true"] { background: var(--m-accent); color: #04121c; }
+.m-view-tools .m-icon-button[aria-pressed="true"] { background: var(--m-accent); color: #04121c; }
+.m-view-code { font: 700 var(--m-text-secondary)/1 var(--m-font); }
+
+/* The bottom stack: notice, object chip, panel and dock. */
+.m-bottom { position: absolute; right: 0; bottom: 0; left: 0; display: flex; flex-direction: column; justify-content: flex-end; pointer-events: none; }
+.m-bottom > * { pointer-events: auto; }
+.m-bottom > .m-notice-slot { order: 1; pointer-events: none; }
+.m-bottom > .m-chip { order: 2; }
+.m-bottom > .m-panel { order: 3; }
+.m-bottom > .m-dock { order: 4; }
+
+/* Dock. */
+.m-dock { display: flex; align-items: center; justify-content: space-between; gap: 0.25rem; min-height: var(--m-dock-height); padding: 0 calc(var(--m-gutter) + var(--m-safe-right)) var(--m-safe-bottom) calc(var(--m-gutter) + var(--m-safe-left)); border-top: 1px solid var(--line); background: var(--m-panel-surface); }
+.m-dock-time, .m-dock-actions { display: flex; align-items: center; gap: 0.25rem; min-width: 0; }
+.m-dock-actions[hidden] { display: none; }
+.m-pill { min-width: var(--touch-target); min-height: var(--touch-target); padding: 0 0.625rem; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); color: var(--text); font: 600 var(--m-text-label)/1.15 var(--m-font); font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer; }
+.m-time { display: grid; align-content: center; justify-items: start; min-width: var(--touch-target); min-height: var(--touch-target); padding: 0 0.375rem; border: 0; border-radius: 0.5rem; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
+.m-time[aria-expanded="true"] { background: var(--m-accent-soft); }
+.m-time-clock { font: 600 var(--m-text-label)/1.15 var(--m-font); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.m-time-date { display: none; color: var(--muted-strong); font-size: var(--m-text-caption); font-variant-numeric: tabular-nums; line-height: 1.15; }
+.m-time-meta { display: flex; align-items: baseline; gap: 0.35rem; }
+.m-live { flex: none; white-space: nowrap; color: var(--m-live, #7ee0a0); font-size: var(--m-text-caption); font-weight: 700; letter-spacing: 0.04em; line-height: 1.15; text-transform: uppercase; }
+.m-live::before { content: ''; display: inline-block; width: 0.45em; height: 0.45em; margin-right: 0.3em; border-radius: 50%; background: currentColor; vertical-align: 0.1em; }
+.m-live[hidden] { display: none; }
+.m-dock-button { display: inline-flex; align-items: center; gap: 0.25rem; min-width: var(--touch-target); min-height: var(--touch-target); padding: 0 0.75rem 0 0.5rem; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); color: var(--text); font: 600 var(--m-text-body)/1.15 var(--m-font); white-space: nowrap; cursor: pointer; }
+.m-dock-button[aria-pressed="true"], .m-dock-button[aria-expanded="true"], .m-new[aria-expanded="true"] { border-color: var(--m-accent); background: var(--m-accent-soft); }
+.m-new { border: 1px solid var(--line-strong); background: var(--surface); }
+@media (min-width: 390px) { .m-time-date { display: block; } }
+@media (max-width: 389px) { .m-edit .m-icon { display: none; } .m-edit { padding-left: 0.75rem; } }
+
+/* Panels: one at a time, above the dock. */
+.m-panel { position: relative; display: flex; flex-direction: column; max-height: 38dvh; border-top: 1px solid var(--line-strong); border-radius: 1rem 1rem 0 0; background: var(--m-panel-surface); box-shadow: 0 -0.5rem 1.5rem rgba(0, 0, 0, 0.35); }
+.m-panel[hidden] { display: none; }
+.m-panel.is-expanded { max-height: calc(85dvh - var(--m-dock-height)); }
+.m-panel-grab { display: flex; flex: none; justify-content: center; height: 1.25rem; touch-action: none; cursor: grab; }
+.m-panel-grab span { width: 2.5rem; height: 0.25rem; margin-top: 0.5rem; border-radius: 999px; background: rgba(185, 201, 218, 0.45); }
+.m-panel-header { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0 calc(0.25rem + var(--m-safe-right)) 0 calc(1rem + var(--m-safe-left)); }
+.m-panel-header[hidden] { display: none; }
+.m-panel-heading { min-width: 0; overflow: hidden; font-size: var(--m-text-heading); font-weight: 600; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
+.m-panel-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.m-panel-content { display: grid; gap: 0.75rem; padding: 0.25rem calc(1rem + var(--m-safe-right)) 1rem calc(1rem + var(--m-safe-left)); }
+.m-panel-content[hidden] { display: none; }
+
+@media (orientation: landscape) {
+  .m-panel { position: fixed; top: var(--m-topbar-height); right: 0; bottom: var(--m-dock-height); width: min(45%, 23.75rem); max-height: none; border-top: 0; border-left: 1px solid var(--line-strong); border-radius: 1rem 0 0 1rem; box-shadow: -0.5rem 0 1.5rem rgba(0, 0, 0, 0.35); }
+  .m-panel.is-expanded { max-height: none; }
+  .m-panel-content { padding-right: calc(1rem + var(--m-safe-right)); padding-left: 1rem; }
+  .m-panel-header { padding-left: 1rem; }
+  .m-view-tools { right: auto; left: calc(var(--m-gutter) + var(--m-safe-left)); }
+}
+
+/* Time panel. */
+.m-time-panel .m-button-row { justify-content: flex-start; }
+
+/* Immersive mode: every control fades out. */
+.mobile-ui-root :is(.m-topbar, .m-view-tools, .m-bottom > .m-chip, .m-bottom > .m-panel, .m-bottom > .m-dock) { transition: opacity 250ms ease, visibility 250ms ease; }
+.mobile-ui-root.is-immersive :is(.m-topbar, .m-view-tools, .m-bottom > .m-chip, .m-bottom > .m-panel, .m-bottom > .m-dock) { opacity: 0; visibility: hidden; pointer-events: none; }
+
+/* The shared-scene status, restyled as a compact card at the top. */
+.app-shell[data-presentation="mobile"] .scene-open-status { top: calc(var(--m-topbar-height) + 0.5rem); width: calc(100vw - 2 * var(--m-gutter) - var(--m-safe-left) - var(--m-safe-right)); padding: 0.75rem 1rem; border-radius: 0.875rem; font-size: var(--m-text-secondary); line-height: 1.3; }
+.app-shell[data-presentation="mobile"] .scene-open-status .dialog-action { min-height: var(--touch-target); padding: 0 0.875rem; font-size: var(--m-text-body); }
+.app-shell[data-presentation="mobile"] .scene-open-dialog { font-size: var(--m-text-body); line-height: 1.3; }
+.app-shell[data-presentation="mobile"] .scene-open-dialog h2 { font-size: var(--m-text-heading); }
+.app-shell[data-presentation="mobile"] .scene-open-dialog .dialog-action { min-height: var(--touch-target); font-size: var(--m-text-body); }
+
+/* The object chooser as a bottom sheet. */
+.scene-chooser.is-sheet { top: auto; right: 0; bottom: 0; left: 0; width: auto; max-height: 70dvh; overflow-y: auto; padding: 0.75rem calc(0.75rem + env(safe-area-inset-right, 0px)) calc(0.75rem + env(safe-area-inset-bottom, 0px)) calc(0.75rem + env(safe-area-inset-left, 0px)); border-radius: 1rem 1rem 0 0; font-family: var(--m-font); }
+.scene-chooser.is-sheet .scene-chooser-heading { margin: 0 0.25rem 0.5rem; color: var(--text); font-size: 1.125rem; font-weight: 600; }
+.scene-chooser.is-sheet .scene-chooser-entry { min-height: 3rem; grid-template-columns: 0.75rem minmax(0, 1fr); column-gap: 0.75rem; padding: 0.375rem 0.75rem; }
+.scene-chooser.is-sheet .scene-chooser-name { font-size: 1rem; }
+.scene-chooser.is-sheet .scene-chooser-detail, .scene-chooser.is-sheet .scene-chooser-more { font-size: 0.875rem; }
+.scene-chooser.is-sheet .object-swatch { width: 0.75rem; height: 0.75rem; }
+
+/* Labels over the scene use the platform font and stay legible. */
+.app-shell[data-presentation="mobile"] .scene-label { font-family: var(--m-font); font-size: 0.8125rem; }
+.app-shell[data-presentation="mobile"] .scene-lab-legend { top: calc(var(--m-topbar-height) + 0.35rem); bottom: auto; font-size: 0.6875rem; }
+.app-shell[data-backdrop="lab"] .m-mark { filter: brightness(0.18); }
+
+/* The 2D map: a full-screen alternative view, centred in the
+   visible region; its own heading is hidden and the dock, chip and view
+   tools stay above it. */
+.app-shell[data-presentation="mobile"] .ground-track-map.is-maximized { position: fixed; z-index: 8; inset: 0; width: auto; max-height: none; padding: calc(var(--m-visible-top, var(--m-topbar-height)) + 0.5rem) calc(var(--m-visible-right, 0px) + var(--m-gutter) + var(--m-safe-right)) calc(var(--m-visible-bottom, var(--m-dock-height)) + 0.5rem) calc(var(--m-gutter) + var(--m-safe-left)); overflow: hidden; border: 0; border-radius: 0; background: #050b15; box-shadow: none; transform: none; }
+.app-shell[data-presentation="mobile"] .ground-track-map .map-heading { display: none; }
+.app-shell[data-presentation="mobile"] .ground-track-map .map-stage .map-empty { max-width: calc(100% - 2rem); font-size: var(--m-text-secondary); }
+
+/* The loading overlay stays above the mobile controls until the scene is ready. */
+.app-shell[data-presentation="mobile"] ~ .loading-overlay { z-index: 20; }
+
+/* Shared panel content. */
+.m-subheading { margin: 0.25rem 0 0; color: var(--muted-strong); font-size: var(--m-text-secondary); font-weight: 600; }
+.mobile-ui-root .m-dot { display: inline-block; width: 0.75rem; height: 0.75rem; flex: none; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4); }
+.mobile-ui-root a { color: var(--cyan-bright); }
+
+/* Gesture hint. */
+.m-hint { position: absolute; top: calc(var(--m-topbar-height) + 0.75rem); left: 50%; max-width: min(18.75rem, calc(100% - 7rem)); padding: 0.5rem 0.875rem; transform: translateX(-50%); border-radius: 999px; background: rgba(9, 22, 37, 0.9); color: var(--muted-strong); font-size: var(--m-text-secondary); line-height: 1.3; text-align: center; pointer-events: none; }
+.m-hint[hidden] { display: none; }
+.mobile-ui-root.is-immersive .m-hint { display: none; }
+
+/* Notice: one at a time above the chip and dock. */
+.m-notice-slot { display: flex; justify-content: center; padding: 0 calc(var(--m-gutter) + var(--m-safe-right)) 0.5rem calc(var(--m-gutter) + var(--m-safe-left)); }
+.m-notice { display: flex; align-items: center; gap: 0.5rem; max-width: 100%; min-height: var(--touch-target); padding: 0.25rem 0.25rem 0.25rem 1rem; border: 1px solid var(--line-strong); border-radius: 0.875rem; background: #10233a; box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.45); pointer-events: auto; }
+.m-notice[hidden] { display: none; }
+.m-notice-text { min-width: 0; max-width: 14.5rem; font-size: var(--m-text-body); line-height: 1.3; overflow-wrap: anywhere; }
+.m-notice-undo { min-width: var(--touch-target); min-height: var(--touch-target); padding: 0 0.875rem; border: 0; border-radius: 0.625rem; background: transparent; color: var(--m-accent); font: 600 var(--m-text-body)/1.15 var(--m-font); cursor: pointer; }
+.m-notice-undo[hidden] { display: none; }
+
+/* Object chip. */
+.m-chip { display: flex; align-items: center; gap: 0.25rem; align-self: flex-start; max-width: calc(100% - 2 * var(--m-gutter) - var(--m-safe-left) - var(--m-safe-right)); margin: 0 0 0.5rem calc(var(--m-gutter) + var(--m-safe-left)); padding: 0.125rem; border: 1px solid var(--line); border-radius: 999px; background: rgba(9, 22, 37, 0.92); box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.35); }
+.m-chip[hidden], .m-chip [hidden] { display: none; }
+.m-chip-count { display: inline-flex; align-items: center; gap: 0.25rem; min-width: var(--touch-target); min-height: var(--touch-target); padding: 0 0.625rem; border: 0; border-radius: 999px; background: var(--surface); color: var(--text); font: 600 var(--m-text-label)/1 var(--m-font); font-variant-numeric: tabular-nums; cursor: pointer; }
+.m-chip-count .m-icon { width: 1.25rem; height: 1.25rem; }
+.m-chip-object { display: flex; align-items: center; gap: 0.5rem; min-width: 0; min-height: var(--touch-target); padding: 0 0.5rem; border: 0; border-radius: 999px; background: transparent; color: var(--text); text-align: left; cursor: pointer; touch-action: pan-y; }
+.m-chip-name { min-width: 0; overflow: hidden; font-size: var(--m-text-body); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.m-chip-value { flex: none; color: var(--muted-strong); font-size: var(--m-text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.m-chip-object[aria-expanded="true"] { background: var(--m-accent-soft); }
+.m-bottom:has(> .m-panel.is-expanded:not([hidden])) > .m-chip { display: none; }
+
+/* Object card. */
+.m-card-source { display: flex; align-items: center; gap: 0.5rem; color: var(--muted-strong); font-size: var(--m-text-secondary); }
+.m-live { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; margin: 0; }
+.m-live div { min-width: 0; }
+.m-live dt { color: var(--muted-strong); font-size: var(--m-text-secondary); }
+.m-live dd { margin: 0; font-size: var(--m-text-live); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.m-card { gap: 0.5rem; padding-top: 0; }
+.m-card-top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.m-card-switches { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.375rem; }
+.m-toggle { display: flex; align-items: center; gap: 0.375rem; min-width: 0; min-height: var(--touch-target); padding: 0.25rem 0.5rem; border: 1px solid var(--line-strong); border-radius: 0.75rem; background: var(--surface); color: var(--muted-strong); font: 400 var(--m-text-secondary)/1.15 var(--m-font); text-align: left; cursor: pointer; }
+.m-toggle[aria-checked="true"] { border-color: var(--m-accent); background: var(--m-accent-soft); color: var(--text); }
+.m-toggle:disabled { opacity: 0.45; cursor: default; }
+.m-toggle-mark { width: 0.875rem; height: 0.875rem; flex: none; border: 2px solid currentColor; border-radius: 50%; }
+.m-toggle[aria-checked="true"] .m-toggle-mark { border-color: var(--m-accent); background: var(--m-accent); box-shadow: inset 0 0 0 2px var(--m-panel-surface); }
+.m-toggle-label { min-width: 0; hyphens: auto; overflow-wrap: anywhere; }
+.m-card-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.25rem; }
+.m-card-action { display: inline-flex; flex: 1 1 0; align-items: center; justify-content: center; min-width: 0; min-height: var(--touch-target); padding: 0 0.375rem; border: 1px solid var(--line-strong); border-radius: 0.75rem; background: var(--surface); color: var(--text); font: 600 var(--m-text-body)/1.15 var(--m-font); cursor: pointer; }
+.m-card-action[hidden] { display: none; }
+.m-card-remove { color: var(--danger); }
+.m-card-more { display: inline-flex; flex: none; align-items: center; justify-content: center; gap: 0.25rem; min-height: var(--touch-target); padding: 0 0.25rem; border: 0; background: transparent; color: var(--muted-strong); font: 400 var(--m-text-secondary)/1.15 var(--m-font); cursor: pointer; }
+.m-card-more .m-icon { width: 1.125rem; height: 1.125rem; transition: transform 150ms ease; }
+.m-card-more[aria-expanded="true"] .m-icon { transform: rotate(180deg); }
+.m-card-details[hidden] { display: none; }
+.m-detail-rows { display: grid; gap: 0.375rem; margin: 0; }
+.m-detail-rows div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 0.5rem; }
+.m-detail-rows dt { color: var(--muted-strong); font-size: var(--m-text-secondary); }
+.m-detail-rows dd { margin: 0; font-size: var(--m-text-secondary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.m-detail-rows .m-detail-note { grid-template-columns: 1fr; }
+.m-detail-rows .m-detail-note dd { color: var(--muted); font-size: var(--m-text-caption); }
+.m-card-age { color: var(--gold); }
+
+/* Objects list. */
+.m-list-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.m-list-count { color: var(--muted-strong); font-size: var(--m-text-secondary); font-variant-numeric: tabular-nums; }
+.m-list-filter[hidden] { display: none; }
+.m-list { display: grid; gap: 0.25rem; margin: 0; padding: 0; list-style: none; }
+.m-list li { display: flex; align-items: center; gap: 0.25rem; }
+.m-row { display: flex; flex: 1 1 auto; align-items: center; gap: 0.75rem; min-width: 0; min-height: 3rem; padding: 0.25rem 0.5rem; border: 1px solid transparent; border-radius: 0.75rem; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
+.m-row[aria-current="true"] { border-color: var(--line-strong); background: var(--surface); }
+.m-row-text { display: grid; min-width: 0; }
+.m-row-name { overflow: hidden; font-size: var(--m-text-body); text-overflow: ellipsis; white-space: nowrap; }
+.m-row-line { color: var(--muted-strong); font-size: var(--m-text-secondary); font-variant-numeric: tabular-nums; }
+.m-row-remove { color: var(--danger); }
+.m-list-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.375rem; }
+.m-list-remove-all.is-bottom { justify-self: start; }
+.m-list-remove-all[hidden] { display: none; }
+
+/* Layers and the map key. */
+.m-layer-switches { display: grid; gap: 0.125rem; }
+.m-map-key[hidden] { display: none; }
+.m-map-key ul { display: grid; gap: 0.375rem; margin: 0.375rem 0 0; padding: 0; list-style: none; font-size: var(--m-text-secondary); }
+.m-map-key li { display: flex; align-items: center; gap: 0.625rem; }
+.m-key-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--text); }
+.m-key-solid, .m-key-dashed { width: 1.5rem; border-top: 2px solid var(--text); }
+.m-key-dashed { border-top-style: dashed; opacity: 0.7; }
+
+/* Menu, About and How to use. */
+.m-menu { gap: 0.25rem; }
+.m-menu-item { display: flex; align-items: center; gap: 0.75rem; min-height: 3rem; padding: 0 0.5rem; border: 0; border-radius: 0.75rem; background: transparent; color: var(--text); font: 400 var(--m-text-body)/1.3 var(--m-font); text-align: left; cursor: pointer; }
+.m-menu-item:disabled { opacity: 0.45; }
+.m-menu-language { display: grid; gap: 0.375rem; padding: 0.25rem 0.5rem 0.5rem; }
+.m-menu-language-label { display: flex; align-items: center; gap: 0.75rem; }
+.m-share-download[hidden] { display: none; }
+.m-about p { font-size: var(--m-text-body); line-height: 1.4; }
+.m-about-wordmark { width: 9rem; height: auto; }
+.m-about-credits { display: grid; gap: 0.25rem; margin: 0; font-size: var(--m-text-secondary); }
+.m-about-credits dt { margin-top: 0.375rem; color: var(--muted-strong); font-weight: 600; }
+.m-about-credits dd { margin: 0; }
+.m-help-lines { display: grid; gap: 0.625rem; margin: 0; padding-left: 1.25rem; font-size: var(--m-text-body); line-height: 1.4; }
+
+/* Shape strip. */
+.m-shape { gap: 0.5rem; padding-top: 0; }
+.m-shape-chips { display: flex; gap: 0.375rem; margin: 0 calc(-1rem - var(--m-safe-right)) 0 calc(-1rem - var(--m-safe-left)); padding: 0 calc(1rem + var(--m-safe-right)) 0.125rem calc(1rem + var(--m-safe-left)); overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+.m-shape-chips::-webkit-scrollbar { display: none; }
+.m-shape-chip { position: relative; flex: none; min-width: var(--touch-target); min-height: var(--touch-target); padding: 0 0.875rem; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); color: var(--muted-strong); font: 600 var(--m-text-secondary)/1.15 var(--m-font); white-space: nowrap; cursor: pointer; }
+.m-shape-chip[aria-pressed="true"] { border-color: transparent; background: var(--m-accent); color: #04121c; }
+.m-shape-chip.is-degenerate::after { content: ""; position: absolute; top: 0.375rem; right: 0.375rem; width: 0.375rem; height: 0.375rem; border-radius: 50%; background: var(--gold); }
+.m-shape-editor { display: grid; gap: 0.25rem; }
+.m-shape-editor[hidden], .m-shape-empty[hidden], .m-ruler-mount[hidden], .m-drift[hidden] { display: none; }
+/* The value keeps the right edge: in Finnish the English term goes on its
+   own line under the label instead of pushing the value onto a new line. */
+.m-shape-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.m-shape-term { min-width: 0; font-size: var(--m-text-body); font-weight: 600; line-height: 1.15; }
+.m-shape-term .term { display: grid; }
+.m-shape-term .term-en { overflow: hidden; color: var(--muted-strong); font-size: var(--m-text-secondary); font-weight: 400; line-height: 1.3; text-overflow: ellipsis; }
+.m-shape-term .term-en::before { content: none; }
+.m-shape-value { font-size: var(--m-text-value); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.15; white-space: nowrap; }
+.m-shape-line { min-height: 1.3em; }
+.m-shape-line:empty { display: block; }
+.m-shape-empty { display: grid; gap: 0.5rem; justify-items: start; }
+.m-drift { display: grid; gap: 0.5rem; justify-items: start; }
+
+/* Editing an orbit: the dock and the object chip give their room to the
+   scene; an empty tap, Back or Escape closes the strip. */
+.mobile-ui-root.is-editing .m-bottom > :is(.m-dock, .m-chip) { display: none; }
+.mobile-ui-root.is-editing .m-shape { padding-bottom: calc(0.75rem + var(--m-safe-bottom)); }
+/* In landscape the strip is a narrower card in the bottom-right corner, as
+   tall as its content, so it stays clear of the top bar's mode switch. */
+@media (orientation: landscape) {
+  .mobile-ui-root.is-editing .m-panel { top: auto; bottom: 0; width: min(42%, 21.5rem); max-height: calc(100% - var(--m-topbar-height) - 0.5rem); border-top: 1px solid var(--line-strong); border-radius: 1rem 0 0 0; }
+  .mobile-ui-root.is-editing .m-shape { padding-right: calc(0.75rem + var(--m-safe-right)); padding-left: 0.75rem; }
+  .mobile-ui-root.is-editing .m-shape-chip { padding: 0 0.75rem; }
+}
+
+/* The ruler. */
+.m-ruler { display: flex; align-items: center; gap: 0.25rem; }
+.m-ruler-step { background: var(--surface); }
+.m-ruler .m-ruler-track { position: relative; flex: 1 1 auto; height: 3.25rem; overflow: hidden; border-radius: 0.5rem; background: rgba(13, 29, 48, 0.9); touch-action: none; cursor: ew-resize; }
+.m-ruler.is-disabled .m-ruler-track { opacity: 0.45; cursor: default; }
+.m-ruler-scale { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.m-ruler-needle { position: absolute; top: 0.25rem; bottom: 0; left: 50%; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--gold); pointer-events: none; }
+.m-ruler-snap { position: absolute; top: 0.125rem; left: 50%; max-width: 10rem; overflow: hidden; transform: translateX(-50%); padding: 0 0.375rem; border-radius: 0.375rem; background: rgba(9, 22, 37, 0.9); color: var(--gold); font-size: var(--m-text-caption); line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
+.m-ruler-snap:empty { display: none; }
+
+/* New orbit. */
+.m-orbit-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
+.m-orbit-tile { display: grid; align-content: center; justify-items: start; gap: 0.125rem; min-height: 4rem; padding: 0.5rem 0.75rem; border: 1px solid var(--line-strong); border-radius: 0.875rem; background: var(--surface); color: var(--text); text-align: left; cursor: pointer; }
+.m-orbit-tile:disabled, .m-example:disabled { opacity: 0.45; cursor: default; }
+.m-orbit-code { font-size: var(--m-text-heading); font-weight: 600; line-height: 1.15; }
+.m-orbit-name { color: var(--muted-strong); font-size: var(--m-text-secondary); line-height: 1.3; }
+.m-examples { display: grid; gap: 0.25rem; margin: 0; padding: 0; list-style: none; }
+.m-example { display: grid; gap: 0.125rem; width: 100%; min-height: 3.25rem; padding: 0.375rem 0.75rem; border: 1px solid var(--line); border-radius: 0.75rem; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
+.m-example-name { font-size: var(--m-text-body); font-weight: 600; }
+.m-example-line { color: var(--muted-strong); font-size: var(--m-text-secondary); }
+
+/* Add sheet. */
+.m-load { display: grid; gap: 0.5rem; justify-items: start; }
+.m-load[hidden], .m-progress[hidden], .m-load-button[hidden], .m-results[hidden], .m-groups[hidden] { display: none; }
+.m-progress { width: 100%; height: 0.25rem; overflow: hidden; border-radius: 999px; background: rgba(145, 180, 216, 0.18); }
+.m-progress span { display: block; width: 40%; height: 100%; border-radius: 999px; background: var(--m-accent); animation: m-progress 1.2s ease-in-out infinite; }
+@keyframes m-progress { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+.m-search { display: flex; align-items: center; gap: 0.5rem; min-height: var(--touch-target); padding: 0 0.75rem; border: 1px solid var(--line-strong); border-radius: 0.75rem; background: #0d1d30; color: var(--muted-strong); }
+.m-search input { flex: 1 1 auto; min-width: 0; min-height: var(--touch-target); border: 0; background: transparent; color: var(--text); font: 400 1rem/1.3 var(--m-font); outline: none; }
+/* The field, not the input inside it, shows focus: one 2 px ring. */
+.m-search:focus-within { border-color: var(--focus-ring); box-shadow: 0 0 0 1px var(--focus-ring); }
+.mobile-ui-root .m-search input:focus-visible { outline: none; }
+.m-add.is-unloaded .m-search, .m-add.is-unloaded .m-groups { opacity: 0.45; }
+.m-results { display: grid; gap: 0.25rem; margin: 0; padding: 0; list-style: none; }
+.m-result { display: flex; align-items: center; gap: 0.5rem; width: 100%; min-height: 3.25rem; padding: 0.25rem 0.5rem 0.25rem 0.75rem; border: 1px solid var(--line); border-radius: 0.75rem; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
+.m-result:disabled { cursor: default; }
+.m-result-text { display: grid; flex: 1 1 auto; min-width: 0; }
+.m-result-name { overflow: hidden; font-size: var(--m-text-body); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.m-result-line { color: var(--muted-strong); font-size: var(--m-text-secondary); }
+.m-result-state { display: inline-grid; flex: none; place-items: center; min-width: 1.5rem; max-width: 6rem; color: var(--muted-strong); font-size: var(--m-text-secondary); text-align: right; }
+.m-groups { display: grid; gap: 0.5rem; }
+.m-example-list { display: grid; gap: 0.5rem; margin-top: 0.75rem; }
+.m-example-row { display: grid; gap: 0.2rem; width: 100%; min-height: var(--touch-target); padding: 0.6rem 0.9rem; border: 1px solid var(--line-strong); border-radius: 0.875rem; background: var(--surface); color: var(--text); text-align: left; cursor: pointer; }
+.m-example-name { font-size: var(--m-text-body); font-weight: 600; }
+.m-example-line { color: var(--muted-strong); font-size: var(--m-text-secondary); line-height: 1.35; }
+.m-about-project .about-links { display: grid; gap: 0.5rem; margin: 0.75rem 0 0; padding: 0; list-style: none; }
+.m-about-project .about-links a { display: inline-flex; align-items: center; min-height: var(--touch-target); }
+.m-about-project p { margin: 0.5rem 0 0; color: var(--muted-strong); font-size: var(--m-text-secondary); line-height: 1.4; }
+.m-featured { display: grid; gap: 0.4rem; margin-bottom: 0.75rem; }
+.m-featured[hidden] { display: none; }
+.m-featured .m-subheading { margin: 0; }
+.m-featured-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.m-featured-chip { min-height: var(--touch-target); padding: 0 0.85rem; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); color: var(--text); font: 600 var(--m-text-secondary)/1.2 var(--m-font); cursor: pointer; }
+.m-featured-chip[data-present="true"] { border-color: var(--m-accent); color: var(--m-accent); }
+.m-featured-chip:disabled { opacity: 0.6; cursor: default; }
+.m-group-tile { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; width: 100%; min-height: 3.5rem; padding: 0.5rem 0.75rem 0.5rem 1rem; border: 1px solid var(--line-strong); border-radius: 0.875rem; background: var(--surface); color: var(--text); text-align: left; cursor: pointer; }
+.m-group-tile:disabled { cursor: default; opacity: 0.6; }
+.m-group-text { display: grid; gap: 0.2rem; min-width: 0; }
+.m-group-title { min-width: 0; font-size: var(--m-text-body); font-weight: 600; }
+.m-group-lead { color: var(--muted-strong); font-size: var(--m-text-secondary); font-weight: 400; line-height: 1.35; }
+.m-group-lead:empty { display: none; }
+.m-group-action { flex: none; color: var(--m-accent); font-size: var(--m-text-body); font-weight: 600; }
+
+/* Typing in the Add sheet: the sheet follows the visible viewport. */
+.mobile-ui-root.is-typing .m-bottom { bottom: var(--m-keyboard-inset, 0px); }
+.mobile-ui-root.is-typing .m-bottom > .m-dock, .mobile-ui-root.is-typing .m-bottom > .m-chip, .mobile-ui-root.is-typing .m-bottom > .m-notice-slot { display: none; }
+.mobile-ui-root.is-typing .m-panel.is-expanded { max-height: calc(var(--m-visual-height, 100dvh) - var(--m-topbar-height)); }
+@media (orientation: landscape) {
+  .mobile-ui-root.is-typing .m-panel { bottom: var(--m-keyboard-inset, 0px); }
+}
+
+/* Landscape polish: the hint stays in the visible region and
+   the Shape strip wraps its chips into rows in the side column. */
+.m-hint { left: calc((100% - var(--m-visible-right, 0px)) / 2); }
+@media (orientation: landscape) {
+  .m-shape-chips { flex-wrap: wrap; margin: 0; padding: 0; overflow: visible; }
+}
+
+/* Long words (Finnish, the pseudo-locale, 130 % text): panels never grow
+   wider than the screen; labels wrap or shorten, and every shortened label
+   keeps its full accessible name. */
+.m-panel-content { grid-template-columns: minmax(0, 1fr); }
+.m-panel-content > * { min-width: 0; }
+.mobile-ui-root :is(.m-mode, .m-switch-label, .m-toggle-label, .m-orbit-name, .m-example-line, .m-group-title, .m-line, .m-caption, .m-notice-text, .m-panel-heading) { hyphens: auto; overflow-wrap: anywhere; }
+.m-mode { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; line-height: 1.1; white-space: normal; }
+.m-live dd { white-space: normal; overflow-wrap: anywhere; }
+.m-card-top { flex-wrap: wrap; }
+.m-card-action { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-dock-actions { flex: 0 1 auto; }
+.m-dock-button { max-width: 100%; }
+.m-dock-button span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.m-dock-time { flex: 0 1 auto; }
+
+/* When the dock has no room for its labels (a narrow phone with large text),
+   the mode actions become icon-only; their names stay. */
+.m-dock { container-type: inline-size; }
+@container (max-width: 21rem) {
+  .m-dock-button span { display: none; }
+  .m-dock-button { padding: 0; justify-content: center; }
+  .m-dock-button .m-icon { display: block; }
+  .m-time-date { display: none; }
+}
+/* With large text the dock wraps its actions onto a second row instead of
+   letting labels overlap; framing follows the taller dock. */
+.m-dock { flex-wrap: wrap; row-gap: 0; }
+.m-dock-time > *, .m-dock-actions > * { flex: none; }
+.m-dock-actions { margin-left: auto; }
+.m-dock, .m-dock-time, .m-dock-actions { column-gap: 0.125rem; }
+.m-dock-button { padding-right: 0.625rem; }
+@media (max-width: 389px) { .m-edit { padding-left: 0.625rem; } }
+.m-segments { justify-self: start; }

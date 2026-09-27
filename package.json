@@ -1,0 +1,59 @@
+{
+  "name": "orbitin",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Interactive orbital mechanics and satellite visualization in the browser: a 3D Earth, a 2D ground-track map and a published satellite catalogue.",
+  "license": "MIT",
+  "author": "Lauri Varjola",
+  "homepage": "https://orbitin.net",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Varjola/orbitin.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Varjola/orbitin/issues"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build && node scripts/build/checkMeasurementHarnessExcluded.mjs dist",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "measure:catalogue": "vitest bench --run src/performance/catalogueOperations.bench.ts",
+    "test:versioning": "node --test scripts/build/versioning.check.mjs",
+    "typecheck:worker": "tsc -p tsconfig.worker.json",
+    "test:deployment": "node --test scripts/deployment/workerConfig.check.mjs scripts/deployment/deployGuard.check.mjs",
+    "build:worker": "npm run build:worker:orbitin && npm run build:worker:orbitin-dev && npm run build:worker:catalogue && npm run build:worker:catalogue-fixture && npm run build:worker:catalogue-monitor && node scripts/deployment/checkWorkerBundles.mjs",
+    "build:worker:orbitin": "wrangler deploy --dry-run -c wrangler.orbitin.jsonc --outdir .wrangler/dry-run/orbitin --metafile",
+    "build:worker:orbitin-dev": "wrangler deploy --dry-run -c wrangler.orbitin-dev.jsonc --outdir .wrangler/dry-run/orbitin-dev --metafile",
+    "build:worker:catalogue": "wrangler deploy --dry-run -c wrangler.catalogue.jsonc --outdir .wrangler/dry-run/orbitin-catalogue --metafile",
+    "build:worker:catalogue-fixture": "wrangler deploy --dry-run -c wrangler.catalogue-fixture.jsonc --outdir .wrangler/dry-run/orbitin-catalogue-fixture --metafile",
+    "build:worker:catalogue-monitor": "wrangler deploy --dry-run -c wrangler.catalogue-monitor.jsonc --outdir .wrangler/dry-run/orbitin-catalogue-monitor --metafile",
+    "dev:frontend-worker": "wrangler dev -c wrangler.orbitin-dev.jsonc --local --port 8788 --persist-to .wrangler/state",
+    "dev:catalogue-fixture": "wrangler dev -c wrangler.catalogue-fixture.jsonc --local --port 8787 --test-scheduled --persist-to .wrangler/state",
+    "dev:catalogue-fixture:remote": "wrangler dev -c wrangler.catalogue-fixture.jsonc --remote --port 8787 --test-scheduled",
+    "deploy:orbitin": "node scripts/deployment/deployGuard.mjs orbitin && npm run build && wrangler deploy -c wrangler.orbitin.jsonc",
+    "deploy:orbitin-dev": "node scripts/deployment/deployGuard.mjs orbitin-dev && npm run build:development && wrangler deploy -c wrangler.orbitin-dev.jsonc",
+    "deploy:catalogue": "node scripts/deployment/deployGuard.mjs orbitin-catalogue && wrangler deploy -c wrangler.catalogue.jsonc",
+    "deploy:catalogue-fixture": "node scripts/deployment/deployGuard.mjs orbitin-catalogue-fixture && wrangler deploy -c wrangler.catalogue-fixture.jsonc",
+    "deploy:catalogue-monitor": "node scripts/deployment/deployGuard.mjs orbitin-catalogue-monitor && wrangler deploy -c wrangler.catalogue-monitor.jsonc",
+    "measure:scene": "vitest bench --run src/performance/sceneScale.bench.ts",
+    "build:development": "tsc && vite build --mode development && node scripts/build/checkMeasurementHarnessExcluded.mjs dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/three": "^0.185.4",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.2",
+    "vitest": "^3.2.4",
+    "wrangler": "^4.138.0"
+  },
+  "dependencies": {
+    "satellite.js": "7.1.0",
+    "three": "^0.185.1"
+  }
+}
