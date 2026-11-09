@@ -1,5 +1,5 @@
 import type { OrbitalObject } from '../simulation/OrbitalObject.ts'
-import { activeScene, sceneFor, withScene, type AppState, type ProductMode } from './AppState.ts'
+import { activeScene, activeSceneMode, sceneFor, withActiveScene, withScene, type AppState, type SceneMode } from './AppState.ts'
 import { addObjects, MAX_SCENE_OBJECTS, removeObjects, selectOnly, singleSelectedObject, updateSceneObject } from './sceneActions.ts'
 import { SENSOR_MAX_FIELD_OF_VIEW_HALF_ANGLE_RAD, SENSOR_MAX_GROUND_ELEVATION_RAD, SENSOR_MAX_OFF_NADIR_STEERING_RAD, SENSOR_MIN_FIELD_OF_VIEW_HALF_ANGLE_RAD, SENSOR_MIN_GROUND_ELEVATION_RAD, SENSOR_MIN_OFF_NADIR_STEERING_RAD } from '../core/constants.ts'
 import { checkSceneBudgets, LAYER_BUDGETS, withLayer, type BudgetCheck, type BudgetedLayer, type LayerBudgets } from './sceneComplexity.ts'
@@ -30,12 +30,11 @@ export const OBJECT_SWATCHES: readonly number[] = [0xd55e00, 0xe69f00, 0xffc857,
 export function isObjectColor(value: number): boolean { return Number.isInteger(value) && value >= 0 && value <= 0xffffff }
 export function objectColorCss(value: number): string { return `#${(value >>> 0 & 0xffffff).toString(16).padStart(6, '0')}` }
 export function getSelectedObject(state: AppState): OrbitalObject | undefined { return singleSelectedObject(activeScene(state)) }
-export function addObjectToMode(state: AppState, mode: ProductMode, object: OrbitalObject): AppState { const next = withScene(state, mode, addObjects(sceneFor(state, mode), [object])); return mode === 'orbitLab' && next !== state ? { ...next, orbitLab: { ...next.orbitLab, authoring: { ...next.orbitLab.authoring, lastConstraint: { kind: 'none' } } } } : next }
-export function addObject(state: AppState, object: OrbitalObject): AppState { return addObjectToMode(state, state.activeMode, object) }
-export function selectObject(state: AppState, id: string): AppState { const next = withScene(state, state.activeMode, selectOnly(activeScene(state), id)); return next !== state && state.activeMode === 'orbitLab' ? { ...next, orbitLab: { ...next.orbitLab, authoring: { ...next.orbitLab.authoring, lastConstraint: { kind: 'none' } } } } : next }
-export function removeObject(state: AppState, id: string): AppState { const next = withScene(state, state.activeMode, removeObjects(activeScene(state), [id])); return next !== state && state.activeMode === 'orbitLab' ? { ...next, orbitLab: { ...next.orbitLab, authoring: { ...next.orbitLab.authoring, lastConstraint: { kind: 'none' } } } } : next }
-export function updateObject(state: AppState, id: string, update: (object: OrbitalObject) => OrbitalObject): AppState { return withScene(state, state.activeMode, updateSceneObject(activeScene(state), id, update)) }
-export function setObjectPropagation(state: AppState, id: string, next: OrbitalObject): AppState { return updateObject(state, id, () => next) }
+export function addObjectToMode(state: AppState, mode: SceneMode, object: OrbitalObject): AppState { const next = withScene(state, mode, addObjects(sceneFor(state, mode), [object])); return mode === 'orbitLab' && next !== state ? { ...next, orbitLab: { ...next.orbitLab, authoring: { ...next.orbitLab.authoring, lastConstraint: { kind: 'none' } } } } : next }
+export function addObject(state: AppState, object: OrbitalObject): AppState { const mode = activeSceneMode(state); return mode ? addObjectToMode(state, mode, object) : state }
+export function selectObject(state: AppState, id: string): AppState { const next = withActiveScene(state, () => selectOnly(activeScene(state), id)); return next !== state && state.activeMode === 'orbitLab' ? { ...next, orbitLab: { ...next.orbitLab, authoring: { ...next.orbitLab.authoring, lastConstraint: { kind: 'none' } } } } : next }
+export function removeObject(state: AppState, id: string): AppState { const next = withActiveScene(state, () => removeObjects(activeScene(state), [id])); return next !== state && state.activeMode === 'orbitLab' ? { ...next, orbitLab: { ...next.orbitLab, authoring: { ...next.orbitLab.authoring, lastConstraint: { kind: 'none' } } } } : next }
+export function updateObject(state: AppState, id: string, update: (object: OrbitalObject) => OrbitalObject): AppState { return withActiveScene(state, () => updateSceneObject(activeScene(state), id, update)) }
 export function setLastConstraint(state: AppState, constraint: AppState['orbitLab']['authoring']['lastConstraint']): AppState { return state.orbitLab.authoring.lastConstraint === constraint ? state : { ...state, orbitLab: { ...state.orbitLab, authoring: { ...state.orbitLab.authoring, lastConstraint: constraint } } } }
 export function setObjectSensorGeometryVisible(state: AppState, id: string, visible: boolean): AppState { return updateObject(state, id, (object) => ({ ...object, display: { ...object.display, sensorGeometryVisible: visible } })) }
 export function setObjectSensorFieldOfViewHalfAngle(state: AppState, id: string, valueRad: number): AppState { if (!Number.isFinite(valueRad) || valueRad < SENSOR_MIN_FIELD_OF_VIEW_HALF_ANGLE_RAD || valueRad > SENSOR_MAX_FIELD_OF_VIEW_HALF_ANGLE_RAD) return state; return updateObject(state, id, (object) => ({ ...object, sensor: { ...object.sensor, fieldOfViewHalfAngleRad: valueRad } })) }
@@ -50,7 +49,7 @@ export function setLayerForObjects(state: AppState, ids: readonly string[], laye
   const objects = scene.objects.map((object) => targets.has(object.id) ? withLayer(object, layer, on) : object)
   const check = checkSceneBudgets(scene.objects, objects, budgets)
   if (!check.ok || objects.every((object, index) => object === scene.objects[index])) return { state, check }
-  return { state: withScene(state, state.activeMode, { ...scene, objects }), check }
+  return { state: withActiveScene(state, () => ({ ...scene, objects })), check }
 }
 export function setColorForObjects(state: AppState, ids: readonly string[], colorHex: number): AppState {
   if (!isObjectColor(colorHex)) return state
@@ -62,5 +61,5 @@ export function setColorForObjects(state: AppState, ids: readonly string[], colo
     changed = true
     return { ...object, style: { ...object.style, colorHex } }
   })
-  return changed ? withScene(state, state.activeMode, { ...scene, objects }) : state
+  return changed ? withActiveScene(state, () => ({ ...scene, objects })) : state
 }

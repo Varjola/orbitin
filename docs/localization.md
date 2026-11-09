@@ -89,8 +89,11 @@ helper in `src/ui/markup.ts`, which escapes it.
   they would need inflecting.
 - Use sentence case for labels, `vrk` for day in rates, and keep abbreviations
   as in English (LEO, TLE, UTC).
-- The mode names are **Kiertoradan mekaniikat** (Orbit Lab) and
-  **Kiertoratojen kappaleet** (Real Objects). They are never abbreviated.
+- The mode names are **Kiertoratojen elementit** (Orbit Lab),
+  **Hakeutuminen** (Interception, the Finnish Air Force pair), **Reittisuunnittelu**
+  (Route Planner) and **Kiertoratojen kappaleet** (Real Objects). They are never
+  abbreviated, except that the phone's mode panel uses short names: *Radat*,
+  *Hakeutuminen*, *Reitit* and *Satelliitit*.
 - The word for a scene is **näkymä**. Every form of it is kept in one place
   at the top of `fi.ts`, so the term can be changed in one edit. The
   view-controls drawer is **Näyttö**, so the two do not collide.

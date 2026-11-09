@@ -5,6 +5,7 @@ import { html, trusted } from '../ui/markup.ts'
 import type { UiCallbacks } from '../ui/uiTypes.ts'
 import { icon } from './mobileIcons.ts'
 import { SCENE_EXAMPLES } from '../data/sceneExamples.ts'
+import type { LinkedMode } from '../data/modeLink.ts'
 
 /** The Web Share API surface this view uses, injectable for tests. */
 export interface SharePort {
@@ -55,7 +56,8 @@ export function menuMarkup(): string {
   const current = languageTag(activeLocale())
   const language = (locale: Locale) => html`<button type="button" data-locale="${locale}" lang="${locale}" aria-pressed="${String(locale === current)}">${LANGUAGE_NAMES[locale]}</button>`
   return html`
-    <button class="m-menu-item m-menu-share" type="button">${trusted(icon('share'))}<span>${t.share}</span></button>
+    <button class="m-menu-item m-menu-share" type="button">${trusted(icon('share'))}<span class="m-menu-share-label">${t.share}</span></button>
+    <p class="m-caption m-share-note" hidden></p>
     <p class="m-line m-share-status" role="status"></p>
     <button class="m-button m-share-download" type="button" hidden>${text().mobile.share.download}</button>
     <div class="m-menu-language" role="group" aria-label="${LANGUAGE_GROUP_LABEL}">
@@ -75,6 +77,10 @@ export class MenuView {
   private readonly status: HTMLElement
   private readonly download: HTMLButtonElement
   private readonly shareButton: HTMLButtonElement
+  private readonly shareLabel: HTMLElement
+  private readonly shareNote: HTMLElement
+  private opening = false
+  private target: 'scene' | LinkedMode = 'scene'
 
   constructor(documentRef: Document, callbacks: MenuCallbacks) {
     this.root = documentRef.createElement('div')
@@ -84,6 +90,8 @@ export class MenuView {
     this.download = this.root.querySelector<HTMLButtonElement>('.m-share-download')!
     this.shareButton = this.root.querySelector<HTMLButtonElement>('.m-menu-share')!
     this.shareButton.dataset.autofocus = ''
+    this.shareLabel = this.root.querySelector<HTMLElement>('.m-menu-share-label')!
+    this.shareNote = this.root.querySelector<HTMLElement>('.m-share-note')!
     this.shareButton.addEventListener('click', () => callbacks.onShare())
     this.download.addEventListener('click', () => callbacks.onDownload())
     for (const button of this.root.querySelectorAll<HTMLButtonElement>('[data-locale]')) {
@@ -102,7 +110,22 @@ export class MenuView {
     this.download.hidden = result !== 'too-large' && result !== 'downloaded'
   }
 
-  setOpening(opening: boolean): void { this.shareButton.disabled = opening }
+  setOpening(opening: boolean): void { this.opening = opening; this.applyShare() }
+
+  /** A mode with a scene shares it; Interception and the Route Planner share
+   *  a link to their starting view, and the note under the button says so. */
+  setTarget(target: 'scene' | LinkedMode): void {
+    if (target === this.target) return
+    this.target = target
+    this.showShareResult(null)
+    this.shareLabel.textContent = target === 'scene' ? text().mobile.menu.share : text().mobile.menu.shareLink
+    this.shareNote.hidden = target === 'scene'
+    this.shareNote.textContent = target === 'scene' ? '' : text().sharing.modeLinkNote[target]
+  }
+
+  private applyShare(): void {
+    this.shareButton.disabled = this.opening
+  }
 }
 
 export function aboutPanelMarkup(): string {

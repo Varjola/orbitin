@@ -34,7 +34,14 @@ export function toggleSceneObjects(state: ShellState): ShellState { return { ...
 export function toggleMapMaximized(state: ShellState): ShellState { return { ...state, mapMaximized: !state.mapMaximized } }
 export function shellAfterMapVisibilityChange(state: ShellState, visible: boolean): ShellState { return visible || !state.mapMaximized ? state : { ...state, mapMaximized: false } }
 export function setCatalogueWorkspaceOpen(state: ShellState, open: boolean): ShellState { return state.catalogueWorkspaceOpen === open ? state : { ...state, catalogueWorkspaceOpen: open } }
-export function shellAfterModeChange(state: ShellState, mode: ProductMode): ShellState { return mode === 'orbitLab' && state.catalogueWorkspaceOpen ? { ...state, catalogueWorkspaceOpen: false } : state }
+/** The catalogue workspace belongs to Real Objects; leaving it closes the workspace. */
+export function shellAfterModeChange(state: ShellState, mode: ProductMode): ShellState { return mode !== 'realObjects' && state.catalogueWorkspaceOpen ? { ...state, catalogueWorkspaceOpen: false } : state }
+/** Shows a planned route: beside the setup, or instead of it where only one drawer fits. */
+export function shellShowingRouteResults(state: ShellState): ShellState { return state.narrowViewport ? { ...state, inspectorOpen: true, leftDrawerOpen: false } : { ...state, inspectorOpen: true } }
+/** The live scene opens with the objects' drawer; the route's drawer waits for playback. */
+export function shellEnteringRoutePlanner(state: ShellState): ShellState { return { ...state, leftDrawerOpen: true, inspectorOpen: false } }
+/** Back from playback to the live scene: the route's drawer closes. */
+export function shellLeavingRoutePlayback(state: ShellState): ShellState { return { ...state, inspectorOpen: false } }
 export function shellAfterViewportChange(state: ShellState, narrowViewport: boolean): ShellState { if (state.narrowViewport === narrowViewport) return state; return narrowViewport && state.leftDrawerOpen && state.inspectorOpen ? { ...state, narrowViewport, leftDrawerOpen: false, inspectorOpen: false } : { ...state, narrowViewport } }
 export function shellForCameraFit(state: ShellState): ShellState { return state.narrowViewport && (state.leftDrawerOpen || state.inspectorOpen) ? { ...state, leftDrawerOpen: false, inspectorOpen: false } : state }
 /** A presentation switch closes the desktop drawers and

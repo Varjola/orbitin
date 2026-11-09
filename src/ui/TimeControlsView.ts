@@ -10,20 +10,27 @@ import { html, trusted } from './markup.ts'
 import { termLabelMarkup } from './termLabel.ts'
 import { isLiveClock } from './liveClock.ts'
 import type { ProductMode } from '../state/AppState.ts'
+import { timePolicyFor } from './timePolicy.ts'
 
-const SPEED_STEPS = [1, 60, 600, 3600] as const
+export const COMPACT_SPEED_CYCLE = timePolicyFor('orbitLab').cycle
 
-export const COMPACT_SPEED_CYCLE = [1, 60, 600] as const
+export function nextCompactSpeed(current: number, cycle: readonly number[] = COMPACT_SPEED_CYCLE): number {
+  const index = cycle.indexOf(current)
+  return index < 0 ? cycle[0] : cycle[(index + 1) % cycle.length]
+}
 
-export function nextCompactSpeed(current: number): number {
-  const index = COMPACT_SPEED_CYCLE.indexOf(current as (typeof COMPACT_SPEED_CYCLE)[number])
-  return index < 0 ? COMPACT_SPEED_CYCLE[0] : COMPACT_SPEED_CYCLE[(index + 1) % COMPACT_SPEED_CYCLE.length]
+/** What moves a mode's objects as time runs. SGP4 objects are not animated
+ *  by mean anomaly. */
+function animationHintMarkup(mode: ProductMode): string {
+  const t = text().time
+  switch (mode) {
+    case 'orbitLab': case 'maneuvers': case 'routePlanner': return termLabelMarkup(t.animationHint, 'meanAnomaly')
+    case 'realObjects': return html`${t.animationHintRealObjects}`
+  }
 }
 
 function compactSpeedLabel(value: number): string {
-  const steps = text().time.speedSteps
-  if (value === 1 || value === 60 || value === 600 || value === 3600) return steps[value]
-  return format().speedMultiplier(value)
+  return (text().time.speedSteps as Readonly<Record<number, string | undefined>>)[value] ?? format().speedMultiplier(value)
 }
 
 export class TimeControlsView {
@@ -33,9 +40,13 @@ export class TimeControlsView {
   private readonly speedValue: HTMLElement
   private readonly compactTimeValue: HTMLOutputElement
   private readonly timeInput: HTMLInputElement
+  /** Where the speed slider lives in a mode with no drawer. */
+  private readonly compactSlider: HTMLInputElement
   private currentSpeed = 60
   private playing = true
   private mode: ProductMode = 'orbitLab'
+  /** A burn holds the clock at 1×: no rate or play changes until release. */
+  private locked = false
   private readonly liveBadge: HTMLElement
   private readonly goLiveButton: HTMLButtonElement
 
@@ -53,6 +64,7 @@ export class TimeControlsView {
         <button id="compact-go-live" class="action-button compact-now-button" type="button" aria-label="${t.goLive}" title="${t.goLive}" hidden>${t.now}</button>
         <button id="play-button" class="action-button compact-playback-button icon-button" type="button" aria-label="${t.pauseSimulation}"><svg class="playback-symbol" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1"></rect><rect x="13.5" y="5" width="4" height="14" rx="1"></rect></svg><span class="sr-only">${t.pause}</span></button>
         <button id="time-speed-cycle" class="action-button compact-speed-button" type="button">${t.speedSteps[60]}</button>
+        <input id="compact-speed-slider" class="compact-speed-slider" type="range" min="0" max="100" step="0.1" value="${sliderFromSpeed(60, MAX_SPEED_MULTIPLIER)}" aria-label="${t.playbackSpeed}" title="${t.speedTitle}" />
       </div>
       <div id="time-drawer-content" class="drawer-content time-drawer-content" hidden>
         <div class="region-body compact-region-body time-controls-layout">
@@ -67,7 +79,7 @@ export class TimeControlsView {
             <p id="time-status" class="time-note" role="status"></p>
           </section>
           <section class="time-cluster" aria-labelledby="time-animation-heading">
-            <div class="region-kicker" id="time-animation-heading">${t.animation} <span class="group-hint" id="time-animation-hint">${trusted(termLabelMarkup(t.animationHint, 'meanAnomaly'))}</span></div>
+            <div class="region-kicker" id="time-animation-heading">${t.animation} <span class="group-hint" id="time-animation-hint">${trusted(animationHintMarkup('orbitLab'))}</span></div>
             <div class="speed-readout-row">${t.currentSpeed} <span class="speed-readout" id="speed-value">${f.speedMultiplier(60)}</span></div>
             <label class="toggle-row compact-toggle"><span>${t.reverse}</span><input id="reverse-toggle" type="checkbox" aria-label="${t.reversePlayback}" /><span class="toggle-ui" aria-hidden="true"></span></label>
             <label class="slider-row" title="${t.speedTitle}">
@@ -88,20 +100,13 @@ export class TimeControlsView {
     this.speedValue = this.root.querySelector<HTMLElement>('#speed-value')!
     this.compactTimeValue = this.root.querySelector<HTMLOutputElement>('#compact-time-value')!
     this.timeInput = this.root.querySelector<HTMLInputElement>('#sim-time-input')!
+    this.compactSlider = this.root.querySelector<HTMLInputElement>('#compact-speed-slider')!
     this.liveBadge = this.root.querySelector<HTMLElement>('#compact-live-badge')!
     this.goLiveButton = this.root.querySelector<HTMLButtonElement>('#compact-go-live')!
     this.goLiveButton.addEventListener('click', () => this.callbacks.onGoLive())
-    for (const step of SPEED_STEPS) {
-      const button = this.root.ownerDocument.createElement('button')
-      button.type = 'button'
-      button.className = 'action-button'
-      button.textContent = t.speedSteps[step]
-      button.setAttribute('aria-label', t.setSpeed(t.speedSteps[step]))
-      button.addEventListener('click', () => this.callbacks.onSpeedChange(step))
-      this.root.querySelector('#speed-steps')!.append(button)
-    }
+    this.renderSteps()
     this.root.querySelector('#time-drawer-toggle')!.addEventListener('click', () => this.callbacks.onToggleTimeDrawer())
-    this.root.querySelector('#time-speed-cycle')!.addEventListener('click', () => this.callbacks.onSpeedChange(nextCompactSpeed(this.currentSpeed)))
+    this.root.querySelector('#time-speed-cycle')!.addEventListener('click', () => this.callbacks.onSpeedChange(nextCompactSpeed(this.currentSpeed, timePolicyFor(this.mode).cycle)))
     this.bindEvents()
   }
 
@@ -109,18 +114,20 @@ export class TimeControlsView {
     const t = text().time
     if (mode !== this.mode) {
       this.mode = mode
-      // SGP4 objects are not animated by mean anomaly; say what moves them.
-      this.root.querySelector('#time-animation-hint')!.innerHTML = mode === 'realObjects' ? html`${t.animationHintRealObjects}` : termLabelMarkup(t.animationHint, 'meanAnomaly')
+      this.root.querySelector('#time-animation-hint')!.innerHTML = animationHintMarkup(mode)
+      this.renderSteps()
     }
     this.goLiveButton.disabled = loading
     this.currentSpeed = simulation.speedMultiplier
     this.playing = simulation.playing
     this.root.toggleAttribute('aria-busy', loading)
-    this.root.classList.toggle('is-expanded', drawerOpen)
+    // A drawer left open in another mode stays closed here and returns with it.
+    const expanded = drawerOpen && timePolicyFor(mode).travel
+    this.root.classList.toggle('is-expanded', expanded)
     const toggle = this.root.querySelector<HTMLButtonElement>('#time-drawer-toggle')!
-    toggle.setAttribute('aria-expanded', String(drawerOpen))
-    toggle.setAttribute('aria-label', drawerOpen ? t.collapse : t.expand)
-    this.root.querySelector<HTMLElement>('#time-drawer-content')!.hidden = !drawerOpen
+    toggle.setAttribute('aria-expanded', String(expanded))
+    toggle.setAttribute('aria-label', expanded ? t.collapse : t.expand)
+    this.root.querySelector<HTMLElement>('#time-drawer-content')!.hidden = !expanded
     this.playButton.innerHTML = simulation.playing
       ? html`<svg class="playback-symbol" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1"></rect><rect x="13.5" y="5" width="4" height="14" rx="1"></rect></svg><span class="sr-only">${t.pause}</span>`
       : html`<svg class="playback-symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.75 19 12 7 19.25Z"></path></svg><span class="sr-only">${t.play}</span>`
@@ -129,8 +136,41 @@ export class TimeControlsView {
     this.speedValue.textContent = format().speedMultiplier(simulation.speedMultiplier)
     const speedCycle = this.root.querySelector<HTMLButtonElement>('#time-speed-cycle')!
     speedCycle.textContent = compactSpeedLabel(simulation.speedMultiplier)
-    speedCycle.setAttribute('aria-label', t.speedCycle(compactSpeedLabel(simulation.speedMultiplier), compactSpeedLabel(nextCompactSpeed(simulation.speedMultiplier))))
-    if (this.root.ownerDocument.activeElement !== this.root.querySelector('#speed-slider')) this.root.querySelector<HTMLInputElement>('#speed-slider')!.value = String(sliderFromSpeed(simulation.speedMultiplier, MAX_SPEED_MULTIPLIER))
+    speedCycle.setAttribute('aria-label', t.speedCycle(compactSpeedLabel(simulation.speedMultiplier), compactSpeedLabel(nextCompactSpeed(simulation.speedMultiplier, timePolicyFor(this.mode).cycle))))
+    for (const slider of this.root.querySelectorAll<HTMLInputElement>('#speed-slider, #compact-speed-slider')) {
+      if (this.root.ownerDocument.activeElement !== slider) slider.value = String(sliderFromSpeed(simulation.speedMultiplier, MAX_SPEED_MULTIPLIER))
+    }
+    if (!loading) this.applyPolicy()
+  }
+
+  /** Locks the rate and play controls while a burn holds the clock. */
+  setLocked(locked: boolean): void {
+    if (locked === this.locked) return
+    this.locked = locked
+    if (!this.root.hasAttribute('aria-busy')) this.applyPolicy()
+  }
+
+  private applyPolicy(): void {
+    const policy = timePolicyFor(this.mode)
+    for (const selector of ['#sim-time-input', '#time-now', '#time-reset', '#reverse-toggle']) this.root.querySelector<HTMLInputElement | HTMLButtonElement>(selector)!.disabled = !policy.travel
+    for (const control of this.root.querySelectorAll<HTMLInputElement | HTMLButtonElement>('#play-button, #time-speed-cycle, #speed-slider, #compact-speed-slider, #speed-steps button')) control.disabled = this.locked
+  }
+
+  private renderSteps(): void {
+    const t = text().time
+    const row = this.root.querySelector<HTMLElement>('#speed-steps')!
+    row.textContent = ''
+    for (const step of timePolicyFor(this.mode).steps) {
+      const button = this.root.ownerDocument.createElement('button')
+      const label = compactSpeedLabel(step)
+      button.type = 'button'
+      button.className = 'action-button'
+      button.textContent = label
+      button.setAttribute('aria-label', t.setSpeed(label))
+      button.disabled = this.locked
+      button.addEventListener('click', () => this.callbacks.onSpeedChange(step))
+      row.append(button)
+    }
   }
 
   updateReadouts(values: ReadoutValues | null, environment: EnvironmentState, simulation: AppState['simulation']): void {
@@ -170,6 +210,9 @@ export class TimeControlsView {
     this.root.querySelector('#time-reset')!.addEventListener('click', () => this.callbacks.onReset())
     this.root.querySelector<HTMLInputElement>('#reverse-toggle')!.addEventListener('change', (event) => this.callbacks.onReversedChange((event.currentTarget as HTMLInputElement).checked))
     this.playButton.addEventListener('click', () => this.callbacks.onPlayingChange(!this.playing))
-    this.root.querySelector<HTMLInputElement>('#speed-slider')!.addEventListener('input', (event) => this.callbacks.onSpeedChange(speedFromSlider(Number((event.currentTarget as HTMLInputElement).value), MAX_SPEED_MULTIPLIER)))
+    for (const slider of this.root.querySelectorAll<HTMLInputElement>('#speed-slider, #compact-speed-slider')) slider.addEventListener('input', () => this.callbacks.onSpeedChange(speedFromSlider(Number(slider.value), MAX_SPEED_MULTIPLIER)))
+    // A focused input keeps the burn keys from firing: dragging the slider
+    // must not leave them dead.
+    this.compactSlider.addEventListener('pointerup', () => this.compactSlider.blur())
   }
 }

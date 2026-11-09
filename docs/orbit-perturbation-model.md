@@ -221,7 +221,7 @@ also absent. The tool must not be read as predicting either.
 | Luni-solar third body | Dominant at geostationary altitude, where it drives about 0.85°/year of inclination growth. The tool therefore claims nothing about GEO inclination evolution |
 | Solar radiation pressure | Needs an area-to-mass ratio that is not available |
 | Tesseral resonance (J22) | The real driver of geostationary longitude drift |
-| Manoeuvres and station keeping | A separate teaching topic |
+| Manoeuvres and station keeping | Taught separately: Interception and the Route Planner add burns to their own models ([route-planner-model.md](./route-planner-model.md)) |
 | Numerical integration of any kind | The point of a secular model is that it is closed-form and stable at very high playback rates |
 
 ## Accuracy

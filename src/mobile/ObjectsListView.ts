@@ -1,4 +1,4 @@
-import type { ProductMode, SceneState } from '../state/AppState.ts'
+import type { SceneMode, SceneState } from '../state/AppState.ts'
 import { MAX_SCENE_OBJECTS } from '../state/sceneActions.ts'
 import { text } from '../i18n/index.ts'
 import { html, trusted } from '../ui/markup.ts'
@@ -69,7 +69,7 @@ export class ObjectsListView {
     })
   }
 
-  sync(scene: SceneState, mode: ProductMode, loading: boolean): void {
+  sync(scene: SceneState, mode: SceneMode, loading: boolean): void {
     const t = text().mobile
     this.scene = scene
     this.root.querySelector('.m-list-count')!.textContent = t.list.count(scene.objects.length, MAX_SCENE_OBJECTS)

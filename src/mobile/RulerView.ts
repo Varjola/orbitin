@@ -3,11 +3,11 @@ import { text } from '../i18n/index.ts'
 import { html, trusted } from '../ui/markup.ts'
 import { icon } from './mobileIcons.ts'
 import { capturePointer } from './PanelHost.ts'
-import { dragValue, normalizeRulerValue, snapAt, stepBy, type RulerSpec, type SnapPoint } from './shapeRulerModel.ts'
+import { dragValue, normalizeRulerValue, snapAt, stepBy, type RulerSpec, type ShapeSnap, type SnapPoint } from './shapeRulerModel.ts'
 
-export interface RulerCallbacks {
+export interface RulerCallbacks<L extends string = ShapeSnap> {
   /** A new value from a drag, a step or a key. */
-  onChange(value: number, snap: SnapPoint | null): void
+  onChange(value: number, snap: SnapPoint<L> | null): void
   /** An adjustment starts or ends (containment follows Size and Shape). */
   onAdjust(phase: 'start' | 'end'): void
 }
@@ -46,7 +46,7 @@ export function rulerMarkup(): string {
 }
 
 /** Tick spacing for the drawn scale, in ruler units: minor and major. */
-function tickSteps(spec: RulerSpec): readonly [number, number] {
+function tickSteps(spec: RulerSpec<string>): readonly [number, number] {
   switch (spec.parameter) {
     case 'shape': return [0.01, 0.1]
     case 'tilt': return [5, 30]
@@ -66,21 +66,21 @@ function sizeTicks(): readonly { readonly value: number; readonly major: boolean
  *  and repeat when held. Arrows step, Page Up and Page Down step ten, Home
  *  and End go to the limits. It is a `slider` with value text that includes
  *  the unit and any snap label. */
-export class RulerView {
+export class RulerView<L extends string = ShapeSnap> {
   readonly root: HTMLElement
-  private readonly callbacks: RulerCallbacks
+  private readonly callbacks: RulerCallbacks<L>
   private readonly environment: RulerEnvironment
   private readonly track: HTMLElement
   private readonly canvas: HTMLCanvasElement
   private readonly snapLabel: HTMLElement
-  private spec: RulerSpec | null = null
+  private spec: RulerSpec<L> | null = null
   private value = 0
-  private drag: { readonly pointerId: number; readonly startX: number; readonly startValue: number; lastSnap: SnapPoint | null } | null = null
+  private drag: { readonly pointerId: number; readonly startX: number; readonly startValue: number; lastSnap: SnapPoint<L> | null } | null = null
   private hold: { timeout: number | null; interval: number | null; direction: -1 | 1; repeats: number } | null = null
   private resizeObserver: ResizeObserver | null = null
-  private snapText: (snap: SnapPoint) => string = () => ''
+  private snapText: (snap: SnapPoint<L>) => string = () => ''
 
-  constructor(documentRef: Document, callbacks: RulerCallbacks, environment: RulerEnvironment) {
+  constructor(documentRef: Document, callbacks: RulerCallbacks<L>, environment: RulerEnvironment) {
     this.callbacks = callbacks
     this.environment = environment
     this.root = documentRef.createElement('div')
@@ -111,7 +111,7 @@ export class RulerView {
   get dragging(): boolean { return this.drag !== null || this.hold !== null }
 
   /** A new chip or orbit: the scale, its value and how snap labels read. */
-  setSpec(spec: RulerSpec, value: number, snapText: (snap: SnapPoint) => string): void {
+  setSpec(spec: RulerSpec<L>, value: number, snapText: (snap: SnapPoint<L>) => string): void {
     this.spec = spec
     this.snapText = snapText
     this.track.setAttribute('aria-valuemin', String(spec.min))
@@ -158,7 +158,7 @@ export class RulerView {
     this.stopHold()
   }
 
-  private emit(value: number, snap: SnapPoint | null): void {
+  private emit(value: number, snap: SnapPoint<L> | null): void {
     if (!this.spec) return
     const next = normalizeRulerValue(this.spec, value)
     if (next === this.value) return

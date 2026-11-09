@@ -6,7 +6,7 @@ avoidance, navigation, pass planning or any operational decision**. This page
 says what each model includes, what it leaves out, and how far its numbers can
 be trusted. The detailed documents it links to are the authority.
 
-## Two modes, three orbit models
+## Four modes, three orbit models
 
 | Mode | Model | Includes | Leaves out |
 | --- | --- | --- | --- |
@@ -22,8 +22,34 @@ other, and a real object cannot be edited as a conic.
 Orbit Lab keeps periapsis above 200 km, because drag is outside its models,
 and apoapsis below 60,000 km, the framing limit of the view.
 
-Details: [orbit-perturbation-model.md](./orbit-perturbation-model.md) and
-[tle-and-sgp4.md](./tle-and-sgp4.md).
+**Interception** uses the ideal two-body model only. Its default altitude view
+exaggerates altitude on purpose: distance from the centre is altitude above
+200 km, so a 500 km and a 700 km orbit are clearly apart, though at true scale
+their radii differ by under 3 %. Angles and altitudes stay exact; path lengths
+and shapes are not to scale. A burn adds speed along or
+against the velocity in steps of one rendered frame, each applied at the middle
+of its step; the result does not depend on the frame rate. Thrust is far
+stronger than real satellite thrusters, about 2 g, so that a burn takes
+seconds: each burn is still short compared with the orbit, so its result
+matches a real burn with the same speed change (Δv). The tank is a Δv budget,
+not a propellant mass. Both satellites stay in one plane, and the game ends at
+200 km altitude because the model has no atmosphere. The moment of reaching
+200 km is computed exactly, so no playback speed can skip it.
+
+**The Route Planner** combines the models above. Satellites wait and drift
+under secular J2; transfer arcs are two-body conics in a frame turning with
+Earth's axis, and the rest of J2 on an arc is left out, which costs a route a
+few m/s at most. Burns are instantaneous. Catalogue satellites start from
+SGP4's mean elements at the planning instant, where Real Objects shows them,
+and then follow this model, so over three days in low orbit they move about
+10 to 26 km from SGP4. Every part of a route stays between 200 km perigee and
+100,000 km apogee, with no drag, Sun or Moon, and no approach or docking. It
+shows the best routes it found, not proven optimal ones, and is a teaching
+model, not usable for real operations.
+
+Details: [orbit-perturbation-model.md](./orbit-perturbation-model.md),
+[tle-and-sgp4.md](./tle-and-sgp4.md) and
+[route-planner-model.md](./route-planner-model.md).
 
 ## Time and reference frames
 
@@ -132,5 +158,4 @@ Details: [sensor-footprint-model.md](./sensor-footprint-model.md).
 ## Not supported
 
 Pass prediction, conjunction or collision analysis, re-entry prediction,
-manoeuvre planning, antenna pointing, precise timing and any use that needs an
-error bound.
+antenna pointing, precise timing and any use that needs an error bound.

@@ -2,18 +2,18 @@ import { stableJson } from './catalogueSchema.ts'
 import { decodeSceneDocument, SCENE_DOCUMENT_FORMAT, type SceneDocumentV1 } from './sceneDocument.ts'
 import { toSharedScene } from './sharedScene.ts'
 import type { SceneTextDecodeResult } from './sceneLink.ts'
-import type { ProductMode } from '../state/AppState.ts'
+import type { SceneMode } from '../state/AppState.ts'
 
 /** The readable scene file. It holds one shared scene
  *  (the sharing profile of `sharedScene.ts`) as sorted-key, indented JSON. */
 export const SCENE_FILE_SUFFIX = '.orbitin.json'
 export const MAX_SCENE_FILE_BYTES = 1_048_576
-const FILE_MODE_NAMES: Readonly<Record<ProductMode, string>> = { orbitLab: 'orbit-lab', realObjects: 'real-objects' }
+const FILE_MODE_NAMES: Readonly<Record<SceneMode, string>> = { orbitLab: 'orbit-lab', realObjects: 'real-objects' }
 
 export function sceneFileText(document: SceneDocumentV1): string { return `${stableJson(document, 2)}\n` }
 
 /** `orbitin-scene-<mode>-YYYYMMDD-HHMM.orbitin.json`, in UTC. */
-export function sceneFileName(mode: ProductMode, now: Date): string {
+export function sceneFileName(mode: SceneMode, now: Date): string {
   const stamp = now.toISOString()
   return `orbitin-scene-${FILE_MODE_NAMES[mode]}-${stamp.slice(0, 10).replace(/-/g, '')}-${stamp.slice(11, 16).replace(':', '')}${SCENE_FILE_SUFFIX}`
 }

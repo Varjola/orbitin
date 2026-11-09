@@ -7,11 +7,18 @@ orbital mechanics. It runs in the browser at [orbitin.net](https://orbitin.net).
 
 ![Orbitin in Orbit Lab: a Sun-synchronous orbit with the Edit orbit sliders, J2 drift and its ground track on the 2D map](docs/images/orbitin-screenshot.png)
 
-It has two modes. **Orbit Lab** holds conceptual Keplerian orbits that are
+It has four modes. **Orbit Lab** holds conceptual Keplerian orbits that are
 edited directly, propagated as ideal two-body orbits or with J2 secular drift.
+**Interception** is a game: hold Speed up or Slow down to bring a
+satellite to a target on another orbit in the same plane.
+**Route Planner** plans routes between two satellites, built in or from the
+catalogue, compares four kinds of route by fuel against time, and plays a
+route back with every burn drawn.
 **Real Objects** propagates published element sets from a Space-Track.org
 catalogue with SGP4/SDP4. Scenes can be shared as links or files. The
 interface is in English and Finnish.
+
+![The Route Planner playing a Go high to turn route between two orbit planes, held at the burn that turns the plane far out, with the thrust arrow, the velocity before and after, and the route's burns listed beside it](docs/images/route-planner-screenshot.png)
 
 ## Limitations
 
@@ -34,6 +41,9 @@ includes and leaves out, and how accurate real-object positions can be.
   environment (Sun direction, Earth orientation) once and propagates each
   object once. The 3D view, the 2D map and the readouts all draw from that
   one result; the map never propagates.
+- **Route search off the main thread.** The Route Planner searches in a
+  browser Web Worker, in small steps with progress and Cancel, so the page
+  keeps drawing. The same request always gives the same routes.
 - **One immutable state store.** `AppState` changes only through pure action
   functions that return the next state.
 - **The catalogue is built on a schedule, not in the browser.** Only the
@@ -120,6 +130,7 @@ file codecs, and the architecture rules above.
 - [Time, Sun and Earth orientation](docs/environment-model.md)
 - [Ground tracks](docs/ground-track-model.md) and [the 2D map](docs/ground-track-map.md)
 - [Sensor footprints](docs/sensor-footprint-model.md)
+- [The Route Planner model](docs/route-planner-model.md)
 - [Modes and scenes](docs/modes-and-scenes.md) and [sharing scenes](docs/scene-sharing.md)
 - [The phone presentation](docs/mobile.md)
 - [Localization](docs/localization.md)

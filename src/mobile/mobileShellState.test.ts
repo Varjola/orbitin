@@ -16,7 +16,7 @@ describe('mobile shell state', () => {
     expect(initialMobileShell(real).surface).toBe('add')
     expect(afterModeChange(INITIAL_MOBILE_SHELL, lab).surface).toBe('shape')
     expect(entrySurface({ ...lab, hasKeplerianSelection: false, hasSelection: false })).toBe('none')
-    // With no orbit left, the strip offers New orbit (4.15).
+    // With no orbit left, the strip offers New orbit.
     expect(entrySurface({ ...lab, sceneEmpty: true, hasKeplerianSelection: false, hasSelection: false })).toBe('shape')
     expect(entrySurface(real)).toBe('add')
     expect(entrySurface({ ...real, sceneEmpty: false })).toBe('none')
@@ -24,7 +24,7 @@ describe('mobile shell state', () => {
 
   it('keeps one panel at a time and classifies compact and expanded panels', () => {
     const compact: MobileSurface[] = ['shape', 'time', 'layers', 'object']
-    const expanded: MobileSurface[] = ['newOrbit', 'add', 'objects', 'menu', 'about', 'help']
+    const expanded: MobileSurface[] = ['newOrbit', 'add', 'objects', 'menu', 'about', 'help', 'hohmann', 'routeBudgets', 'modes']
     for (const surface of compact) expect(isCompactSurface(openSurface(INITIAL_MOBILE_SHELL, surface)), surface).toBe(true)
     for (const surface of expanded) expect(isExpandedSurface(openSurface(INITIAL_MOBILE_SHELL, surface)), surface).toBe(true)
     expect(isCompactSurface(INITIAL_MOBILE_SHELL)).toBe(false)

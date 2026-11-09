@@ -16,7 +16,7 @@ function stateWith(scene: readonly OrbitalObject[]) {
   return withScene({ ...state, activeMode: 'realObjects' }, 'realObjects', { ...EMPTY_SCENE, objects: scene })
 }
 
-it('fixes the measured M1 budgets', () => {
+it('fixes the measured budgets', () => {
   expect(LAYER_BUDGETS).toEqual({ orbitPath: 100, groundTrack: 100, groundTrackHistory: 100, sensorGeometry: 75 })
 })
 

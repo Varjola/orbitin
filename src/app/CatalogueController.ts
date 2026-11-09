@@ -121,6 +121,12 @@ export class CatalogueController {
     this.presenter.renderQuickSearch?.(result, 'input')
     return result
   }
+  /** The same search as Quick Search, for another tool: Real Objects' search text
+   *  and results are left as they are. */
+  searchEntries(text: string, limit = QUICK_SEARCH_RESULT_LIMIT): CatalogueSearchResult {
+    if (this.disposed || !this.client.current) return { entries: [], totalMatches: 0, hasMore: false }
+    return this.client.quickSearch(text, limit)
+  }
   changeWorkingSelection(catalogId: string): void {
     if (this.disposed) return
     this.sync(toggleWorkingSelection(this.workspaceState, catalogId))

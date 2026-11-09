@@ -135,7 +135,7 @@ it('compare-and-swaps the pointer and leaves the live one intact when it loses',
   const liveEtag = objects.get('catalog/v1/current.json')!.etag
 
   // A run that lost the pointer race leaves its parts durable but unreachable;
-  // the plan makes those eligible for ordinary retention cleanup. What must not
+  // ordinary retention cleanup removes them later. What must not
   // happen is the live pointer moving.
   const lost = await fixtureSnapshot('2026-09-10T12:17:00Z')
   await expect(publishSnapshot(bucket, lost, 'a-stale-etag')).rejects.toThrow('changed during publication')

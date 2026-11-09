@@ -2,7 +2,7 @@ import { decodeSceneFileText, MAX_SCENE_FILE_BYTES, sceneFileName, sceneFileText
 import { createSceneLink, decodeSceneLinkPayload, sceneLinkAvailability, sceneLinkPayload, type SceneTextFailure } from '../data/sceneLink.ts'
 import type { SceneDocumentError, SceneDocumentV1 } from '../data/sceneDocument.ts'
 import { sharedSceneDocument, sharedSceneSummary, type SharedSceneSummary } from '../data/sharedScene.ts'
-import { sceneFor, type AppState, type ProductMode } from '../state/AppState.ts'
+import { sceneFor, type AppState, type SceneMode } from '../state/AppState.ts'
 import { text } from '../i18n/index.ts'
 import { openConfirmationMessage, openIncomingLine, openProgressMessage, openResultLines, sceneOpenFailureMessage } from '../ui/sceneSharingWording.ts'
 import { CatalogueSnapshotChangedError, type ResolvedCatalogueRecords } from './CatalogueController.ts'
@@ -25,7 +25,7 @@ export interface SceneSharingDependencies {
   catalogueAddPending(): boolean
   loadCatalogue(): Promise<void>
   resolveRecords(ids: readonly string[]): Promise<ResolvedCatalogueRecords>
-  applySharedScene(mode: ProductMode, resolved: ResolvedSceneDocument): void
+  applySharedScene(mode: SceneMode, resolved: ResolvedSceneDocument): void
   presenter: SceneSharingPresenter
   location: SceneLinkLocation
   /** Development builds log the first validation paths; learners never see them. */

@@ -1,4 +1,4 @@
-import type { ProductMode } from '../state/AppState.ts'
+import type { ProductMode, SceneMode } from '../state/AppState.ts'
 
 /** Anonymous, cookieless usage and error events.
  *
@@ -22,8 +22,10 @@ export type UsageEvent =
   | { readonly type: 'object_added'; readonly source: 'quick-search' | 'catalogue' | 'group' | 'featured' | 'manual'; readonly norad?: string }
   | { readonly type: 'group_added'; readonly group: string }
   | { readonly type: 'example_opened'; readonly example: string }
-  | { readonly type: 'share'; readonly kind: 'link' | 'file' | 'native'; readonly mode: ProductMode; readonly objects: '0' | '1' | '2-10' | '11-40' | '41+' }
-  | { readonly type: 'scene_opened'; readonly kind: 'link' | 'file' | 'example'; readonly mode: ProductMode }
+  | { readonly type: 'share'; readonly kind: 'link' | 'file' | 'native'; readonly mode: SceneMode; readonly objects: '0' | '1' | '2-10' | '11-40' | '41+' }
+  | { readonly type: 'scene_opened'; readonly kind: 'link' | 'file' | 'example'; readonly mode: SceneMode }
+  | { readonly type: 'maneuver_result'; readonly outcome: 'won' | 'reentered' | 'restarted' | 'new-game'; readonly burns: '0' | '1-2' | '3-5' | '6-10' | '11+'; readonly efficiency?: 'under-1.2' | '1.2-1.5' | '1.5-2' | 'over-2' }
+  | { readonly type: 'route_planned'; readonly limits: 'none' | 'time' | 'fuel' | 'both'; readonly family: 'direct' | 'turnAtNode' | 'goHigh' | 'drift'; readonly deltaV: 'under-100' | '100-500' | '500-1000' | '1000-3000' | '3000-6000' | 'over-6000'; readonly duration: 'under-6h' | '6-24h' | '1-7d' | '7-30d' | 'over-30d'; readonly sources: 'example' | 'catalogue' | 'mixed' }
   | { readonly type: 'view'; readonly which: 'map-maximized' | 'language' }
   | { readonly type: 'error'; readonly kind: UsageErrorKind }
 
@@ -86,6 +88,20 @@ export function resultCountBucket(count: number): Extract<UsageEvent, { type: 's
 }
 export function objectCountBucket(count: number): Extract<UsageEvent, { type: 'share' }>['objects'] {
   return count <= 0 ? '0' : count === 1 ? '1' : count <= 10 ? '2-10' : count <= 40 ? '11-40' : '41+'
+}
+export function burnCountBucket(count: number): Extract<UsageEvent, { type: 'maneuver_result' }>['burns'] {
+  return count <= 0 ? '0' : count <= 2 ? '1-2' : count <= 5 ? '3-5' : count <= 10 ? '6-10' : '11+'
+}
+/** Δv used over the Hohmann minimum. */
+export function efficiencyBucket(ratio: number): NonNullable<Extract<UsageEvent, { type: 'maneuver_result' }>['efficiency']> {
+  return ratio < 1.2 ? 'under-1.2' : ratio < 1.5 ? '1.2-1.5' : ratio < 2 ? '1.5-2' : 'over-2'
+}
+export function routeDeltaVBucket(kmPerSecond: number): Extract<UsageEvent, { type: 'route_planned' }>['deltaV'] {
+  return kmPerSecond < 0.1 ? 'under-100' : kmPerSecond < 0.5 ? '100-500' : kmPerSecond < 1 ? '500-1000' : kmPerSecond < 3 ? '1000-3000' : kmPerSecond < 6 ? '3000-6000' : 'over-6000'
+}
+export function routeDurationBucket(seconds: number): Extract<UsageEvent, { type: 'route_planned' }>['duration'] {
+  const hours = seconds / 3600
+  return hours < 6 ? 'under-6h' : hours < 24 ? '6-24h' : hours < 7 * 24 ? '1-7d' : hours < 30 * 24 ? '7-30d' : 'over-30d'
 }
 export function httpStatusClass(status: number | undefined): Extract<UsageEvent, { type: 'catalogue_failed' }>['status'] {
   if (status === undefined) return 'other'

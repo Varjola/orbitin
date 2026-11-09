@@ -6,15 +6,28 @@ import type { CatalogueSearchResult } from '../data/catalogueSearch.ts'
 import type { CatalogueFailure } from '../data/catalogueFailure.ts'
 import type { OrbitPresetId } from '../simulation/orbitPresets.ts'
 import type { AppState } from '../state/AppState.ts'
-import { activeScene } from '../state/AppState.ts'
+import { activeScene, isSceneMode } from '../state/AppState.ts'
 import type { ShellState } from '../state/shellState.ts'
 import { INITIAL_CATALOGUE_WORKSPACE, type CatalogueWorkspaceState } from '../state/catalogueWorkspaceState.ts'
 import type { CatalogueComparisonItem } from './catalogueComparison.ts'
 import type { CatalogueDiscoveryPresentation } from './catalogueDiscoveryModel.ts'
 import { AppShellView } from './AppShellView.ts'
+import { focusIsLost } from './focusKeeping.ts'
 import { buildShellModel } from './shellModel.ts'
 import { OrbitLabDrawerView } from './OrbitLabDrawerView.ts'
 import { RealObjectsDrawerView } from './RealObjectsDrawerView.ts'
+import { ManeuverDrawerView } from './ManeuverDrawerView.ts'
+import { ManeuverBurnControlsView } from './ManeuverBurnControlsView.ts'
+import { ManeuverInfoView } from './ManeuverInfoView.ts'
+import { ManeuverViewControlsView } from './ManeuverViewControlsView.ts'
+import type { ManeuverPanelModel } from './maneuverPanelModel.ts'
+import { RouteDrawerView } from './RouteDrawerView.ts'
+import type { RoutePanelModel, RoutePlaybackModel } from './routePanelModel.ts'
+import { RouteResultsView } from './RouteResultsView.ts'
+import { RoutePlaybackView } from './RoutePlaybackView.ts'
+import { RouteLauncherView } from './RouteLauncherView.ts'
+import { RouteLiveBarView } from './RouteLiveBarView.ts'
+import { RoutePlanningView } from './RoutePlanningView.ts'
 import { SceneInspectorView } from './SceneInspectorView.ts'
 import { SensorSettingsView } from './SensorSettingsView.ts'
 import { TimeControlsView } from './TimeControlsView.ts'
@@ -40,6 +53,16 @@ interface Views {
   readonly shellView: AppShellView
   readonly orbitLabView: OrbitLabDrawerView
   readonly realObjectsView: RealObjectsDrawerView
+  readonly maneuversView: ManeuverDrawerView
+  readonly burnControls: ManeuverBurnControlsView
+  readonly maneuverView: ManeuverViewControlsView
+  readonly maneuverInfo: ManeuverInfoView
+  readonly routeDrawer: RouteDrawerView
+  readonly routeResults: RouteResultsView
+  readonly routePlayback: RoutePlaybackView
+  readonly routeLauncher: RouteLauncherView
+  readonly routeLiveBar: RouteLiveBarView
+  readonly routePlanning: RoutePlanningView
   readonly inspectorView: SceneInspectorView
   readonly sensorView: SensorSettingsView
   readonly timeView: TimeControlsView
@@ -74,6 +97,11 @@ export class UiRoot implements ApplicationUi {
   private loading = true
   private sceneOpening = false
   private lastReadoutUpdate = -Infinity
+  private maneuvers: ManeuverPanelModel | null = null
+  private lastManeuverUpdate = -Infinity
+  private routePlanner: RoutePanelModel | null = null
+  private routePlayback: RoutePlaybackModel | null = null
+  private routePlaybackShown = false
   private selectedId: string | null = null
   private featuredPicks: readonly FeaturedPickTile[] = []
   /** The Real Objects first-visit hint is done for this page load (dismissed
@@ -139,6 +167,8 @@ export class UiRoot implements ApplicationUi {
     views.shellView.sync(model)
     views.orbitLabView.sync(model.orbitLab, state.orbitLab.scene, this.loading, state.orbitLab.scene.selection.primaryId ? state.orbitLab.scene.objects.find((object) => object.id === state.orbitLab.scene.selection.primaryId) : undefined, state.orbitLab.authoring.lastConstraint, lockStatus)
     views.realObjectsView.sync(model.realObjects, state.realObjects.scene, this.loading)
+    this.syncManeuvers()
+    this.syncRoutePlanner()
     views.objectList.sync(active, this.loading, state.activeMode)
     views.objectList.setExpanded(this.shell.sceneObjectsExpanded)
     views.shellView.sceneObjectsRoot.hidden = active.objects.length === 0
@@ -232,6 +262,24 @@ export class UiRoot implements ApplicationUi {
   hideSceneOpenStatus(): void { this.views.sceneOpenView.hide() }
   setSceneOpening(opening: boolean): void { this.sceneOpening = opening; this.views.shareView.setOpening(opening); this.views.optionsMenu.setOpenSceneFileEnabled(!opening) }
 
+  updateManeuvers(model: ManeuverPanelModel | null, force = false): void {
+    this.maneuvers = model
+    const nowMs = performance.now()
+    if (this.loading || (!force && nowMs - this.lastManeuverUpdate < 90)) return
+    this.lastManeuverUpdate = nowMs
+    this.syncManeuvers()
+  }
+
+  updateRoutePlanner(model: RoutePanelModel | null): void {
+    this.routePlanner = model
+    if (!this.loading) this.syncRoutePlanner()
+  }
+
+  updateRoutePlayback(model: RoutePlaybackModel | null): void {
+    this.routePlayback = model
+    this.syncRoutePlayback()
+  }
+
   dispose(): void { this.disposeViews() }
 
   private build(): Views {
@@ -242,6 +290,16 @@ export class UiRoot implements ApplicationUi {
     const orbitLabView = new OrbitLabDrawerView(shellView.orbitLabRoot, callbacks, this.presets)
     const orbitLabLauncher = new OrbitLabLauncherView(shellView.orbitLabLauncherRoot, callbacks)
     const realObjectsView = new RealObjectsDrawerView(shellView.realObjectsRoot, callbacks)
+    const maneuversView = new ManeuverDrawerView(shellView.maneuversRoot, callbacks)
+    const burnControls = new ManeuverBurnControlsView(shellView.maneuverControlsRoot, callbacks)
+    const maneuverView = new ManeuverViewControlsView(shellView.maneuverViewRoot, callbacks)
+    const maneuverInfo = new ManeuverInfoView(shellView.maneuverInfoRoot)
+    const routeDrawer = new RouteDrawerView(shellView.routeDrawerRoot, callbacks)
+    const routeResults = new RouteResultsView(shellView.routeResultsRoot, callbacks)
+    const routePlayback = new RoutePlaybackView(shellView.routePlaybackRoot, shellView.routeExitRoot, callbacks, (burnIndex) => routeResults.setHoveredBurn(burnIndex))
+    const routeLauncher = new RouteLauncherView(shellView.routeLauncherRoot, callbacks)
+    const routeLiveBar = new RouteLiveBarView(shellView.routeLiveBarRoot, callbacks)
+    const routePlanning = new RoutePlanningView(shellView.routePlanningRoot, callbacks)
     const objectList = new SceneObjectsView(shellView.sceneObjectsRoot, callbacks, () => shellView.focusWorkspaceToggle())
     const inspectorView = new SceneInspectorView(shellView.inspectorRoot, callbacks)
     const timeView = new TimeControlsView(shellView.timeRoot, callbacks)
@@ -252,11 +310,13 @@ export class UiRoot implements ApplicationUi {
     const optionsMenu = new OptionsMenuView(shellView.optionsRoot, applicationBuildInfo, { onChooseSceneFile: () => sceneOpenView?.chooseFile(), onLocaleChange: callbacks.onLocaleChange, onOpenExample: callbacks.onOpenExample })
     const shareView = new ShareSceneView(shellView.optionsRoot, callbacks)
     sceneOpenView = new SceneOpenView(container, callbacks, () => optionsMenu.focusTrigger())
-    return { shellView, orbitLabView, realObjectsView, inspectorView, sensorView, timeView, viewControls, catalogueView, catalogueLauncher, orbitLabLauncher, objectList, optionsMenu, shareView, sceneOpenView }
+    return { shellView, orbitLabView, realObjectsView, maneuversView, burnControls, maneuverView, maneuverInfo, routeDrawer, routeResults, routePlayback, routeLauncher, routeLiveBar, routePlanning, inspectorView, sensorView, timeView, viewControls, catalogueView, catalogueLauncher, orbitLabLauncher, objectList, optionsMenu, shareView, sceneOpenView }
   }
 
   private disposeViews(): void {
     const views = this.views
+    // First: ending a held burn updates the whole interface, which must still be there.
+    views.burnControls.dispose()
     views.sensorView.dispose()
     views.sceneOpenView.dispose()
     views.shareView.dispose()
@@ -266,6 +326,15 @@ export class UiRoot implements ApplicationUi {
     views.orbitLabLauncher.dispose()
     views.orbitLabView.dispose()
     views.realObjectsView.dispose()
+    views.maneuverView.dispose()
+    views.maneuverInfo.dispose()
+    views.maneuversView.dispose()
+    views.routeDrawer.dispose()
+    views.routeResults.dispose()
+    views.routePlayback.dispose()
+    views.routeLauncher.dispose()
+    views.routeLiveBar.dispose()
+    views.routePlanning.dispose()
     views.inspectorView.dispose()
     views.shellView.dispose()
   }
@@ -284,6 +353,50 @@ export class UiRoot implements ApplicationUi {
     this.views.catalogueLauncher.setHintVisible(!this.loading && !this.realObjectsHintDone)
   }
 
+  /** The game views follow the mode, the loading state and the last model. */
+  private syncManeuvers(): void {
+    const views = this.views
+    const active = this.state?.activeMode === 'maneuvers'
+    views.burnControls.setActive(active && !this.loading)
+    views.maneuverView.setActive(active && !this.loading)
+    views.maneuversView.sync(this.maneuvers, this.loading)
+    views.burnControls.sync(this.maneuvers, this.loading, this.shell.leftDrawerOpen)
+    views.maneuverView.sync(this.maneuvers, this.loading)
+    views.timeView.setLocked(this.maneuvers?.burning != null)
+    views.shareView.setTarget(this.state === undefined ? null : isSceneMode(this.state.activeMode) ? 'scene' : this.state.activeMode)
+  }
+
+  private syncRoutePlanner(): void {
+    const active = this.state?.activeMode === 'routePlanner'
+    const wasOpen = this.views.routeLauncher.root.querySelector('[aria-expanded="true"]') !== null
+    this.views.routeDrawer.sync(this.routePlanner, this.loading)
+    this.views.routeResults.sync(this.routePlanner)
+    this.views.routeLauncher.sync(this.routePlanner, active, this.loading)
+    this.views.routeLiveBar.sync(this.routePlanner, active, this.loading)
+    this.views.routePlanning.sync(this.routePlanner, active, this.loading)
+    // Closed back to the live scene: the focus returns to Plan route.
+    if (wasOpen && active && this.routePlanner?.window === 'closed' && this.routePlanner.view === 'live') this.views.routeLauncher.focus()
+    this.syncRoutePlayback()
+  }
+
+  private syncRoutePlayback(): void {
+    const active = this.state?.activeMode === 'routePlanner'
+    this.views.routePlayback.sync(this.routePlayback, active, this.loading)
+    // Play, or Exit playback, took away the control that had the focus: it goes
+    // to the playback bar's Play, or back to Plan route.
+    const shown = active && !this.loading && this.routePlayback !== null
+    if (shown !== this.routePlaybackShown) {
+      this.routePlaybackShown = shown
+      if (focusIsLost(this.views.shellView.root.ownerDocument)) {
+        if (shown) this.views.routePlayback.focus()
+        else if (active) this.views.routeLauncher.focus()
+      }
+    }
+    this.views.shellView.setRoutePlayback(active && this.routePlayback !== null)
+    const burnNumber = this.routePlayback?.burnNumber ?? null
+    this.views.routeResults.setHeldBurn(burnNumber === null ? null : burnNumber - 1)
+  }
+
   private applyLoading(): void {
     this.views.shellView.setLoading(this.loading)
     this.views.timeView.setLoading(this.loading)
@@ -297,6 +410,7 @@ export class UiRoot implements ApplicationUi {
     views.shellView.sync(model)
     views.objectList.setExpanded(this.shell.sceneObjectsExpanded)
     views.realObjectsView.sync(model.realObjects, this.state.realObjects.scene, this.loading)
+    this.syncManeuvers()
     views.timeView.sync(this.state.simulation, this.loading, model.timeDrawer.open, this.state.activeMode)
     views.viewControls.sync(this.state.view, activeScene(this.state), this.loading, model.viewDrawer.open, this.state.look, this.state.activeMode)
     views.catalogueView.sync(this.catalogueWorkspace, model.catalogueWorkspace.open, this.loading, this.state.realObjects.scene)

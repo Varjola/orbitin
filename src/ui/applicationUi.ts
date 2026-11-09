@@ -12,6 +12,8 @@ import type { CatalogueDiscoveryPresentation } from './catalogueDiscoveryModel.t
 import type { GroupProvenance } from './sceneObjectsModel.ts'
 import type { Insets, Rect } from './shellGeometry.ts'
 import type { LayerBudgetSurface, ReadoutValues, ShapeAdjustParameter } from './uiTypes.ts'
+import type { ManeuverPanelModel } from './maneuverPanelModel.ts'
+import type { RoutePanelModel, RoutePlaybackModel } from './routePanelModel.ts'
 
 export type { Insets, Rect } from './shellGeometry.ts'
 
@@ -125,4 +127,11 @@ export interface ApplicationUi {
   showSceneOpenError(message: string, retryable: boolean): void
   hideSceneOpenStatus(): void
   setSceneOpening(opening: boolean): void
+  // Interception
+  /** The game panel and burn controls for the current instant, or null when
+   *  there is no game. `force` skips the readout pace (a burn, an outcome). */
+  updateManeuvers(model: ManeuverPanelModel | null, force?: boolean): void
+  updateRoutePlanner(model: RoutePanelModel | null): void
+  /** The playback bar, every frame while the Route Planner shows a route. */
+  updateRoutePlayback(model: RoutePlaybackModel | null): void
 }

@@ -1,5 +1,5 @@
 import { lengthVec3 } from '../core/vec3.ts'
-import { EARTH_RADIUS_KM, MAX_SPEED_MULTIPLIER, SIMULATION_START_INSTANT } from '../core/constants.ts'
+import { EARTH_RADIUS_KM, MAX_SPEED_MULTIPLIER, RENDER_UNITS_PER_KM, SIMULATION_START_INSTANT } from '../core/constants.ts'
 import { defaultGroundReachConstraint, defaultSensorDefinition } from '../simulation/sensorFootprint.ts'
 import { clamp, degToRad } from '../core/angles.ts'
 import type { SimulationInstant } from '../core/time.ts'
@@ -24,7 +24,7 @@ import {
 } from '../simulation/propagationTransitions.ts'
 import { ORBIT_PRESETS, createObjectFromPreset } from '../simulation/orbitPresets.ts'
 import { SimulationClock } from '../simulation/SimulationClock.ts'
-import { activeScene, allSceneObjectIds, AppStateStore, withScene, type AppState, type OrbitLabDrawerTab, type ProductMode, type SceneSelection } from '../state/AppState.ts'
+import { activeScene, activeSceneMode, allSceneObjectIds, AppStateStore, isSceneMode, withActiveScene, withScene, type AppState, type OrbitLabDrawerTab, type ProductMode, type SceneMode, type SceneSelection } from '../state/AppState.ts'
 import { addObjectToMode, getSelectedObject, isObjectColor, OBJECT_COLORS, setColorForObjects, setLastConstraint, setLayerForObjects, setObjectMinimumGroundElevation, setObjectSensorFieldOfViewHalfAngle, setObjectSensorSteeringLimit, updateObject } from '../state/objectActions.ts'
 import type { BudgetedLayer } from '../state/sceneComplexity.ts'
 import type { LayerBudgetSurface } from '../ui/uiTypes.ts'
@@ -74,20 +74,39 @@ import type { RuntimeViewOptions, SensorGeometryViewPort } from './OrbitalObject
 import { GroundTrackMapView, type GroundTrackMapObjectPort } from '../map/GroundTrackMapView.ts'
 import { advanceSimulationFrame, type FrameDependencies } from './advanceSimulationFrame.ts'
 import { tleAgeWarning } from '../ui/tleWording.ts'
-import { text } from '../i18n/index.ts'
+import { format, text } from '../i18n/index.ts'
 import { LocaleController } from './LocaleController.ts'
 import { OMM_OBJECT_NOTE, TLE_OBJECT_NOTE } from '../state/canonicalNotes.ts'
 import { CatalogueController } from './CatalogueController.ts'
 import { addCatalogueRecordsToScene } from './addCatalogueRecordsToScene.ts'
 import type { AddCatalogueRecordsOutcome } from '../state/catalogueAdditionOutcome.ts'
 import { sceneStatusMessage } from '../ui/sceneStatusWording.ts'
-import { mapCoversScene, openingShellState, NARROW_VIEWPORT_QUERY, setCatalogueWorkspaceOpen, shellAfterMapVisibilityChange, shellAfterModeChange, shellAfterPresentationChange, shellAfterViewportChange, shellForCameraFit, toggleInspector, toggleLeftDrawer, toggleMapMaximized, toggleSceneObjects, toggleTimeDrawer, toggleViewDrawer, type ShellState } from '../state/shellState.ts'
+import { mapCoversScene, openingShellState, NARROW_VIEWPORT_QUERY, setCatalogueWorkspaceOpen, shellAfterMapVisibilityChange, shellAfterModeChange, shellAfterPresentationChange, shellAfterViewportChange, shellEnteringRoutePlanner, shellForCameraFit, shellLeavingRoutePlayback, shellShowingRouteResults, toggleInspector, toggleLeftDrawer, toggleMapMaximized, toggleSceneObjects, toggleTimeDrawer, toggleViewDrawer, type ShellState } from '../state/shellState.ts'
 import { occlusionInsets } from '../ui/shellGeometry.ts'
 import { layerBudgetMessage, sceneFullForManualAdd } from '../ui/shellWording.ts'
 import type { SceneMeasurementTarget } from './sceneMeasurementTarget.ts'
 import { SceneInteractionController, type InteractionSurface } from './SceneInteractionController.ts'
 import { ScenePicker } from '../scene/scenePicking.ts'
 import { SceneLabelLayer } from '../scene/SceneLabelLayer.ts'
+import { ManeuverSceneView } from '../scene/ManeuverSceneView.ts'
+import { RoutePlanSceneView } from '../scene/RoutePlanSceneView.ts'
+import { renderUnitsPerPixel } from '../scene/VectorArrowView.ts'
+import type { Route } from '../simulation/route/routeModel.ts'
+import { burnViewDirection, cameraDirection, currentOrbit, driftViewShown, followTooFast, normalOf, orbitNormal, routeInstant, routeProfile, routeViewDirection, type RouteCameraScene, type RouteProfile } from '../simulation/route/routeDrawing.ts'
+import { planeAngleBetween } from '../simulation/route/routeObjects.ts'
+import { satelliteState, stateOnRoute } from '../simulation/route/routeState.ts'
+import { shownRate } from '../simulation/route/routePlayback.ts'
+import { deltaVText } from '../ui/routeWording.ts'
+import { ManeuverPlaneView, type PlaneInsets, type PlaneWords } from '../scene/ManeuverPlaneView.ts'
+import { orbitPlaneBasis } from '../orbital/inPlaneState.ts'
+import { MANEUVER_RULES, orbitApsides, playerSegmentAt, playerTrail, predictionArc, segmentState, targetTrail, type ManeuverGame, type OrbitApsis } from '../simulation/maneuverGame.ts'
+import { buildManeuverPanelModel, maneuverPanelKey, type ManeuverDisplay } from '../ui/maneuverPanelModel.ts'
+import { buildRoutePanelModel, buildRoutePlaybackModel, PLANES_SHOWN_ABOVE_RAD } from '../ui/routePanelModel.ts'
+import { apsisLabel } from '../ui/maneuverWording.ts'
+import { ManeuverController, type ClockSetting, type ManeuverClockPort } from './ManeuverController.ts'
+import { RoutePlannerController, type RoutePlaybackSnapshot } from './RoutePlannerController.ts'
+import { routeCataloguePort } from './routeCatalogue.ts'
+import { createRouteSolverWorker } from './routeSolverWorker.ts'
 import { OrbitGuidesView, type OrbitGuideKind } from '../scene/OrbitGuidesView.ts'
 import { MyPlaceMarkerView } from '../scene/MyPlaceMarkerView.ts'
 import { elevationAngleRad, observerPositionEarthFixedKm, type ObserverLocation } from '../simulation/observerGeometry.ts'
@@ -98,9 +117,11 @@ import { SceneObjectChooserView } from '../ui/SceneObjectChooserView.ts'
 import type { PickHit, PickTolerances } from '../interaction/pickRanking.ts'
 import type { ScreenPoint } from '../core/screenGeometry.ts'
 import { SceneSharingController } from './SceneSharingController.ts'
-import { browserSceneLinkLocation } from './sceneLinkLocation.ts'
+import { browserSceneLinkLocation, onModeHashChange, takeModeLink } from './sceneLinkLocation.ts'
+import { modeLinkUrl } from '../data/modeLink.ts'
 import { applySharedSceneToState } from './applySharedScene.ts'
 import type { ResolvedSceneDocument } from './resolveSceneDocument.ts'
+import { modeClockStep, type ClockSnapshot } from './modeClock.ts'
 
 const ORBIT_CREATION_PALETTES: Readonly<Record<OrbitCreationKind, readonly number[]>> = {
   leo: [0xff9f43, 0xffb347, 0xf57c2b],
@@ -123,6 +144,38 @@ const HIGH_RESOLUTION_EARTH_DISTANCE = 2.4
 const FRAMING_EASE_MS = 250
 /** Easing back in after a Size or Shape drag. */
 const CONTAINMENT_EASE_MS = 400
+/** The turn to look onto a game's orbital plane or a route. */
+const FOCUS_EASE_MS = 600
+/** How often the Route Planner's panel follows its running live scene. */
+const ROUTE_PANEL_PACE_MS = 200
+/** The live scene is fitted again once its orbits grow past, or shrink well inside,
+ *  the view they were fitted to. */
+const LIVE_REFIT_GROWTH = 1.05
+const LIVE_REFIT_SHRINK = 0.5
+/** Pinned labels sit to the right of their anchors: two anchored closer than this
+ *  across and down would cover each other. */
+const LABEL_GAP_PX = { across: 84, down: 22 } as const
+
+/** A part of a burn in words: its size and which way. */
+function partWords(kmPerSecond: number, positive: string, negative: string): string {
+  return text().routePlanner.burnPart(deltaVText(Math.abs(kmPerSecond)), kmPerSecond >= 0 ? positive : negative)
+}
+
+/** Keeps the labels in order, hiding any anchored too close to one already kept. */
+function declutteredLabels(labels: readonly { readonly text: string; readonly at: ScreenPoint | null }[]): { readonly text: string; readonly at: ScreenPoint | null }[] {
+  const kept: ScreenPoint[] = []
+  return labels.map((label) => {
+    const at = label.at
+    if (at === null || kept.some((other) => Math.abs(other.x - at.x) < LABEL_GAP_PX.across && Math.abs(other.y - at.y) < LABEL_GAP_PX.down)) return { text: label.text, at: null }
+    kept.push(at)
+    return label
+  })
+}
+
+function planeWords(): PlaneWords {
+  const t = text().maneuvers
+  return { note: t.altitudeNote, label: t.altitudeViewTitle, ring: (altitudeKm) => format().km(altitudeKm, 0) }
+}
 
 /** A scene and its group provenance, before an undoable change. */
 interface UndoBaseline { readonly state: AppState; readonly provenance: ReadonlyMap<string, readonly GroupMembership[]> }
@@ -169,7 +222,11 @@ export class Application {
   private shell: ShellState
   private readonly narrowViewportQuery: MediaQueryList
   /** The learner turned or zoomed the view. */
-  private readonly onControlsStart = (): void => { if (this.shapeAdjustment) this.shapeAdjustment.learnerMovedView = true }
+  private readonly onControlsStart = (): void => {
+    if (this.shapeAdjustment) this.shapeAdjustment.learnerMovedView = true
+    // Turning the view by hand hands it back to the learner.
+    if (this.store.getState().activeMode === 'routePlanner') this.routePlanner.setCameraView('free')
+  }
   private readonly onViewportChange = (event: MediaQueryListEvent): void => this.setShell(shellAfterViewportChange(this.shell, event.matches))
   private readonly mapObjectLayers = new Map<string, GroundTrackMapObjectPort>()
   private readonly frameDependencies: FrameDependencies
@@ -194,6 +251,11 @@ export class Application {
   private indexIds: { readonly snapshotId: string; readonly ids: ReadonlySet<string> } | null = null
   /** Whether Real Objects has been shown in this page load. */
   private realObjectsVisited = false
+  /** The clock as Orbit Lab or Real Objects left it when Interception or the
+   *  Route Planner took it over. */
+  /** Orbit Lab's clock as it was left; coming back puts it back. */
+  private labClock: ClockSnapshot | null = null
+  private stopModeLinks: (() => void) | null = null
   private failed: FailureKind | null = null
   private contextWatched = false
   private nextObjectSequence = 1
@@ -210,6 +272,44 @@ export class Application {
   private lastAddBefore: UndoBaseline | null = null
   /** A ruler adjustment in progress. */
   private shapeAdjustment: { readonly parameter: ShapeAdjustParameter; learnerMovedView: boolean } | null = null
+  /** The Interception game: its state, burn input and clock handoff. */
+  private readonly maneuvers: ManeuverController
+  private readonly maneuverView: ManeuverSceneView
+  /** What the game panel last showed, so a change redraws at once. */
+  private maneuverPanel = ''
+  /** The orbit radius the game view was last fitted to, in render units. */
+  private maneuverFitRadius = 0
+  /** The orbital plane altitude view (the default) or the 3D view. */
+  private maneuverDisplay: ManeuverDisplay = 'altitude'
+  private maneuverAid = false
+  private maneuverApsides: readonly OrbitApsis[] = []
+  private readonly planeView: ManeuverPlaneView
+  private planeInsetsMs = -Infinity
+  /** The Route Planner: its setup, search and route. */
+  private readonly routePlanner: RoutePlannerController
+  /** The planner opens its drawers only the first time, then leaves them to the learner. */
+  private routePlannerVisited = false
+  private readonly routeView: RoutePlanSceneView
+  /** The learner's choice of plane discs, or null to follow the angle between the planes. */
+  private routePlanesChoice: boolean | null = null
+  /** The route the view was last turned to. */
+  private framedRoute: Route | null = null
+  /** The camera view applied last frame, and the burn last turned to. */
+  private routeCameraApplied: string | null = null
+  /** The playback strip's profile, worked out once a route. */
+  private routeProfileFor: Route | null = null
+  private routeProfileShown: RouteProfile | null = null
+  private routeBurnFramed: string | null = null
+  /** The live scene's view and the radius it was last fitted to. */
+  private framedLive: { readonly view: string; readonly radius: number } | null = null
+  private routePanelPublishedMs = -Infinity
+  private routePlaybackShown = false
+  /** Playback is so fast that orbits are drawn instead of dots. */
+  private routeDrifting = false
+  /** Playback is too fast to follow your satellite: the face-on view stands in. */
+  private routeFollowHeld = false
+  /** While drifting fast, the instant whose Earth rotation stays shown. */
+  private routeEarthHeld: SimulationInstant | null = null
 
   constructor(root: HTMLElement, options: ApplicationOptions = {}) {
     this.localeController = options.locale ?? new LocaleController()
@@ -226,6 +326,16 @@ export class Application {
     this.sceneRoot = new SceneRoot(root.querySelector<HTMLElement>('#scene-container')!)
     this.picker = new ScenePicker(this.sceneRoot.camera)
     this.labels = new SceneLabelLayer(root.querySelector<HTMLElement>('#scene-container')!)
+    this.maneuverView = new ManeuverSceneView(this.sceneRoot.scene, (material) => this.sceneRoot.addLineMaterial(material), (material) => this.sceneRoot.removeLineMaterial(material))
+    this.planeView = new ManeuverPlaneView(this.sceneRoot.renderer.domElement, planeWords(), () => this.ui.handleEmptyTap('3d'))
+    this.routeView = new RoutePlanSceneView(this.sceneRoot.scene, (material) => this.sceneRoot.addLineMaterial(material), (material) => this.sceneRoot.removeLineMaterial(material))
+    const modeClock: ManeuverClockPort = {
+      instant: () => this.clock.currentInstant(),
+      setting: () => ({ speedMultiplier: this.clock.speedMultiplier, playing: this.clock.playing }),
+      set: (setting, instant) => this.setGameClock(setting, instant),
+    }
+    this.maneuvers = new ManeuverController(modeClock, recordUsage)
+    this.routePlanner = new RoutePlannerController(modeClock, createRouteSolverWorker, routeCataloguePort(() => this.catalogue), recordUsage, () => this.publishRoutePlanner())
     this.myPlaceMarker = new MyPlaceMarkerView(this.sceneRoot.earthFixedRoot)
     this.guides = new OrbitGuidesView(this.sceneRoot.scene, (material) => this.sceneRoot.addLineMaterial(material), (material) => this.sceneRoot.removeLineMaterial(material))
     this.reducedMotionQuery = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null
@@ -364,20 +474,7 @@ export class Application {
         this.commitState(setGroundTrackMapVisible(this.store.getState(), visible))
         this.setShell(shellAfterMapVisibilityChange(this.shell, visible))
       },
-      onModeChange: (mode: ProductMode) => {
-        if (!this.ready || this.disposed) return
-        // Undo acts on the scene in view: a mode switch ends the offer.
-        if (this.undo && mode !== this.store.getState().activeMode) { this.undo = null; this.ui.withdrawUndo() }
-        const firstRealObjectsVisit = mode === 'realObjects' && !this.realObjectsVisited
-        if (mode === 'realObjects') this.realObjectsVisited = true
-        this.commitState(setActiveMode(this.store.getState(), mode))
-        this.setShell(shellAfterModeChange(this.shell, mode))
-        // Real objects are shown where they are now. The first
-        // entry into an empty Real Objects scene moves the one clock to the
-        // current time at 1×; Orbit Lab keeps its own start instant.
-        if (firstRealObjectsVisit && this.store.getState().realObjects.scene.objects.length === 0) this.goLive(true)
-        recordUsage({ type: 'mode', mode })
-      },
+      onModeChange: (mode: ProductMode) => this.changeMode(mode),
       onToggleLeftDrawer: () => this.setShell(toggleLeftDrawer(this.shell)),
       onToggleInspector: () => this.setShell(toggleInspector(this.shell)),
       onToggleTimeDrawer: () => this.setShell(toggleTimeDrawer(this.shell)),
@@ -413,7 +510,7 @@ export class Application {
         this.ui.focusCatalogueResultsSummary()
       },
       onAddToScene: (catalogIds, jumpToEpoch) => { void this.addCatalogueRecords(catalogIds, jumpToEpoch, { source: 'catalogue' }) },
-      // Selecting an object that is already in the scene also reveals it (4.8).
+      // Selecting an object that is already in the scene also reveals it.
       onQuickSearchAddToScene: async (catalogId) => {
         this.recordSearchUsed()
         const outcome = await this.addCatalogueRecords([catalogId], false, { source: 'quick-search' })
@@ -464,6 +561,7 @@ export class Application {
         if (link.ok) this.recordShare('link')
         return link
       },
+      onModeLinkRequested: (mode) => modeLinkUrl(window.location, mode),
       onSceneFileRequested: () => { this.recordShare('file'); return this.sharing.file(new Date()) },
       onOpenSceneFile: (file) => { if (this.ready && !this.disposed) void this.sharing.openFile(file) },
       onConfirmSceneOpen: () => { void this.sharing.confirmPendingOpen() },
@@ -473,6 +571,57 @@ export class Application {
       onLocaleChange: (locale) => { recordUsage({ type: 'view', which: 'language' }); this.localeController.change(locale) },
       onLoadGroupFacts: (groupId) => this.loadGroupFacts(groupId),
       onAddFeaturedPick: (catalogId) => this.addCatalogueObjectOnMobile(catalogId, 'featured'),
+      onRouteTry: (id) => { if (this.ready && !this.disposed) this.routePlanner.selectTry(id) },
+      onRouteLiveToggle: () => this.routePlanner.toggleLive(),
+      onRouteLiveRate: (rate) => this.routePlanner.setLiveRate(rate),
+      onRouteExit: () => { this.routePlanner.exitRoute(); this.setShell(shellLeavingRoutePlayback(this.shell)) },
+      onRouteViewRoute: () => { this.routePlanner.viewRoute(); this.setShell(shellShowingRouteResults(this.shell)) },
+      onRoutePlannerOpen: () => { if (this.ready && !this.disposed) this.routePlanner.openPlanner() },
+      onRoutePlannerClose: () => this.routePlanner.closePlanner(),
+      onRouteDetailsBack: () => this.routePlanner.backToRoutes(),
+      onRoutePlayDetails: () => { this.routePlanner.playDetails(); this.setShell(shellShowingRouteResults(this.shell)) },
+      onRouteCameraView: (view) => this.routePlanner.setCameraView(view),
+      onRouteFrameBurns: (frameBurns) => this.routePlanner.setFrameBurns(frameBurns),
+      onRouteObjectEdit: (side, changes) => this.routePlanner.editObject(side, changes),
+      onRouteCircular: (side, circular) => this.routePlanner.setCircular(side, circular),
+      onRouteTargetAhead: (aheadDeg) => this.routePlanner.setTargetAhead(aheadDeg),
+      onRouteCatalogueEnable: () => { if (this.ready && !this.disposed) this.routePlanner.enableCatalogue() },
+      onRouteSearch: (text) => this.routePlanner.searchCatalogue(text),
+      onRoutePick: (side, catalogId) => { if (this.ready && !this.disposed) this.routePlanner.pick(side, catalogId) },
+      onRouteSwap: () => this.routePlanner.swap(),
+      onRouteLimitTimeChange: (on) => this.routePlanner.setLimitTime(on),
+      onRouteLimitFuelChange: (on) => this.routePlanner.setLimitFuel(on),
+      onRouteLimitChange: (seconds) => this.routePlanner.setLimit(seconds),
+      onRouteBudgetChange: (kmPerSecond) => this.routePlanner.setBudget(kmPerSecond),
+      onPlanRoute: () => { if (this.ready && !this.disposed) this.routePlanner.plan() },
+      onCancelRoute: () => this.routePlanner.cancel(),
+      onRoutePlayToggle: () => this.routePlanner.togglePlaying(),
+      onRouteReverseChange: (reversed) => this.routePlanner.setReversed(reversed),
+      onRouteSpeedChange: (speed) => this.routePlanner.setPlaybackSpeed(speed),
+      onRouteAutoplayChange: (autoplay) => this.routePlanner.setAutoplay(autoplay),
+      onRouteSeek: (tau) => this.routePlanner.seek(tau),
+      onRouteBurnStep: (direction) => this.routePlanner.stepBurn(direction),
+      onRouteBurnSelect: (burnIndex) => this.routePlanner.showBurn(burnIndex),
+      onRouteSelect: (index) => this.routePlanner.selectRoute(index),
+      onRouteIspChange: (seconds) => this.routePlanner.setSpecificImpulse(seconds),
+      onRouteFit: () => this.requestFit(),
+      onRoutePlanesChange: (shown) => { this.routePlanesChoice = shown; this.publishRoutePlanner() },
+      onBurnPress: (direction) => {
+        if (!this.ready || this.disposed || this.store.getState().activeMode !== 'maneuvers') return
+        this.maneuvers.press(direction)
+        this.publishManeuvers(true)
+      },
+      onBurnRelease: () => { this.maneuvers.release(); this.publishManeuvers(true) },
+      onManeuverAidChange: (shown) => { this.maneuverAid = shown; this.publishManeuvers(true) },
+      onNewManeuverGame: () => { if (this.ready && !this.disposed) { this.maneuvers.newGame(); this.frameManeuverGame(); this.publishManeuvers(true) } },
+      onRestartManeuverGame: () => { if (this.ready && !this.disposed) { this.maneuvers.restart(); this.frameManeuverGame(); this.publishManeuvers(true) } },
+      onManeuverDisplayChange: (display) => {
+        if (display === this.maneuverDisplay) return
+        this.maneuverDisplay = display
+        this.frameManeuverGame()
+        this.publishManeuvers(true)
+      },
+      onManeuverFaceOn: () => this.frameManeuverGame(),
       onOpenExample: (exampleId) => {
         const example = SCENE_EXAMPLES.find((candidate) => candidate.id === exampleId)
         if (!example || !this.ready || this.disposed) return
@@ -570,7 +719,11 @@ export class Application {
     this.frameDependencies = {
       clock: this.clock, runtime: this.runtime,
       applyEnvironment: (instant) => this.applyEnvironment(instant),
-      publishInstant: (currentInstant) => {
+      publishInstant: (advancedInstant) => {
+        // The game thrusts and is decided here; it can stop the clock at an
+        // earlier instant (re-entry), so the published instant is read after it.
+        if (this.store.getState().activeMode === 'maneuvers') this.maneuvers.frame(advancedInstant)
+        const currentInstant = this.clock.currentInstant()
         const stopped = this.store.getState().simulation.playing !== this.clock.playing
         this.store.update((state) => ({ ...state, simulation: { ...state.simulation, currentInstant, playing: this.clock.playing } }))
         if (stopped) this.ui.syncState(this.store.getState(), this.lockStatus)
@@ -579,8 +732,15 @@ export class Application {
       render: () => {
         this.interaction.frame(performance.now())
         // The maximized map covers the 3D canvas opaquely; simulation and map
-        // drawing continue and 3D drawing resumes on the next frame (4.7).
-        if (!this.mapCoversScene()) { this.updateGuides(); this.sceneRoot.render(); this.updatePrimaryLabel(); this.considerHighResolutionEarth() } else this.labels.setPrimary(null, null)
+        // drawing continue and 3D drawing resumes on the next frame.
+        // The altitude view draws instead of the 3D view, which then skips drawing.
+        const altitude = this.altitudeViewShown()
+        this.planeView.setVisible(altitude)
+        if (this.mapCoversScene()) { this.labels.setPrimary(null, null); this.labels.setPinned([]) }
+        else if (altitude) this.drawAltitudeView()
+        else { this.updateGuides(); this.drawManeuvers(); this.drawRoute(); this.sceneRoot.render(); this.updatePrimaryLabel(); this.updatePinnedLabels(); this.considerHighResolutionEarth() }
+        this.publishManeuvers()
+        this.publishRoutePlayback()
         // A cheap dirty check while the map is closed or unchanged. The map
         // starts no second requestAnimationFrame loop of its own.
         this.map.render()
@@ -636,12 +796,16 @@ export class Application {
       this.ui.setLoading(false)
       this.publishOfficialGroups()
       if (scene.objects.length > 0) this.requestFit()
+      // Entered while loading: the live scene was not framed yet.
+      if (state.activeMode === 'routePlanner') { this.framedLive = null; this.frameRoute(true) }
       const startInstant = this.clock.currentInstant()
       const startOrientation = this.applyEnvironment(startInstant)
       this.updateReadouts(this.runtime.updateAt(startInstant, startOrientation, performance.now()), startInstant, performance.now(), true)
       this.stopRenderLoop = this.startFrames()
       // A shared link opens only once the application is ready.
       this.sharing.start()
+      this.stopModeLinks = onModeHashChange(window, () => this.openModeLink())
+      this.openModeLink()
     } catch (error) {
       if (!this.disposed) this.fail('frame', error)
     }
@@ -649,7 +813,28 @@ export class Application {
 
   /** The one render loop; a frame that throws stops it with a message. */
   private startFrames(): () => void {
-    return startRenderLoop((deltaSeconds, nowMs, wallNowMs) => advanceSimulationFrame(this.frameDependencies, deltaSeconds, nowMs, wallNowMs), (error) => this.fail('frame', error))
+    return startRenderLoop((deltaSeconds, nowMs, wallNowMs) => {
+      this.playRoute(deltaSeconds)
+      advanceSimulationFrame(this.frameDependencies, deltaSeconds, nowMs, wallNowMs)
+    }, (error) => this.fail('frame', error))
+  }
+
+  /** Route playback sets the paused shared clock before the frame reads it,
+   *  so the Earth, the Sun and the route all show one instant. */
+  private playRoute(deltaSeconds: number): void {
+    if (!this.ready || this.store.getState().activeMode !== 'routePlanner') { this.routeDrifting = false; this.routeFollowHeld = false; this.routeEarthHeld = null; return }
+    const instant = this.routePlanner.frame(deltaSeconds)
+    this.clock.setInstant(instant)
+    // The panel's values follow the running scene at the interface's pace.
+    if (this.routePlanner.liveRunning() && performance.now() - this.routePanelPublishedMs > ROUTE_PANEL_PACE_MS) this.publishRoutePlanner()
+    const playback = this.routePlanner.playbackSnapshot()
+    const rate = playback !== null && playback.state.playing ? shownRate(playback.state, playback.point) : 0
+    this.routeDrifting = playback !== null && driftViewShown(playback.route, playback.point.seconds, rate, this.routeDrifting)
+    // Held through a burn's pause in the clock, so the view does not swing back and forth.
+    this.routeFollowHeld = playback !== null && this.routePlanner.cameraSettings().camera === 'follow' && playback.state.playing
+      && (playback.point.burnIndex !== null ? this.routeFollowHeld : followTooFast(playback.route, playback.point.seconds, rate, this.routeFollowHeld))
+    // Earth would spin many times a second; it stays where it was, and the bar says so.
+    this.routeEarthHeld = this.routeDrifting ? this.routeEarthHeld ?? instant : null
   }
 
   /** A lost WebGL context stops drawing and offers
@@ -683,8 +868,11 @@ export class Application {
     this.map.applyLocale()
     this.chooser.applyLocale()
     this.interaction.reset()
+    // A held burn ends before the controls holding it go away.
+    this.maneuvers.release()
     this.ui.rebuild()
     this.replayInterface()
+    this.planeView.setWords(planeWords())
     this.applyLook(this.store.getState())
   }
 
@@ -696,6 +884,8 @@ export class Application {
     this.publishOfficialGroups()
     this.sharing.republish()
     if (!this.ready) return
+    this.publishManeuvers(true)
+    this.publishRoutePlanner()
     const instant = this.clock.currentInstant()
     const orientation = this.applyEnvironment(instant)
     this.updateReadouts(this.runtime.updateAt(instant, orientation, performance.now()), instant, performance.now(), true)
@@ -706,6 +896,8 @@ export class Application {
     this.appShell.dataset.presentation = presentation
     this.desktopContainer.hidden = presentation !== 'desktop'
     this.mobileContainer.hidden = presentation !== 'mobile'
+    // The phone's goals take the altitude view's top left, where the note was.
+    this.planeView.setNoteShown(presentation === 'desktop')
     return presentation === 'mobile'
       ? new MobileUiRoot(this.mobileContainer, this.callbacks)
       : new UiRoot(this.desktopContainer, this.callbacks, ORBIT_PRESETS.map(({ id }) => id))
@@ -718,6 +910,7 @@ export class Application {
   private switchPresentation(next: Presentation): void {
     if (this.disposed) return
     this.interaction.reset()
+    this.maneuvers.release()
     this.ui.dispose()
     this.desktopContainer.textContent = ''
     this.mobileContainer.textContent = ''
@@ -766,7 +959,7 @@ export class Application {
     if (previous.activeMode !== next.activeMode) this.interaction.reset()
     else this.interaction.sceneChanged(new Set(scene.objects.map((object) => object.id)))
     if (previous.view.groundTrackMapVisible && !next.view.groundTrackMapVisible) this.interaction.mapLayoutChanged(false)
-    this.map.setOpen(next.view.groundTrackMapVisible)
+    this.map.setOpen(next.view.groundTrackMapVisible && isSceneMode(next.activeMode))
     this.map.setPrimary(scene.selection.primaryId)
     this.sceneRoot.ensureFarPlane(orbitCollectionRadius(scene.objects, false))
     // Any other change to the recorded scene makes the undo stale.
@@ -875,7 +1068,8 @@ export class Application {
 
   private recordShare(kind: 'link' | 'file'): void {
     const state = this.store.getState()
-    recordUsage({ type: 'share', kind, mode: state.activeMode, objects: objectCountBucket(activeScene(state).objects.length) })
+    const mode = activeSceneMode(state)
+    if (mode) recordUsage({ type: 'share', kind, mode, objects: objectCountBucket(activeScene(state).objects.length) })
   }
 
   /** The colour an object is drawn with in the 3D scene. */
@@ -986,6 +1180,48 @@ export class Application {
     })
   }
 
+  /** Switches the mode in view: from the mode window, the phone's mode panel or
+   *  a mode link. */
+  private changeMode(mode: ProductMode): void {
+    if (!this.ready || this.disposed) return
+    const previousMode = this.store.getState().activeMode
+    const clockStep = modeClockStep(previousMode, mode, this.labClock)
+    if (clockStep.rememberLab) this.labClock = this.clockSnapshot()
+    if (previousMode === 'maneuvers' && mode !== 'maneuvers') this.maneuvers.leave()
+    if (previousMode === 'routePlanner' && mode !== 'routePlanner') this.routePlanner.leave()
+    // Undo acts on the scene in view: a mode switch ends the offer.
+    if (this.undo && mode !== this.store.getState().activeMode) { this.undo = null; this.ui.withdrawUndo() }
+    const firstRealObjectsVisit = mode === 'realObjects' && !this.realObjectsVisited
+    if (mode === 'realObjects') this.realObjectsVisited = true
+    this.commitState(setActiveMode(this.store.getState(), mode))
+    this.setShell(shellAfterModeChange(this.shell, mode))
+    // Real objects are shown where they are now: every entry into Real
+    // Objects moves the one clock to the current time at 1×, and the first
+    // also turns towards daylight. Orbit Lab gets its own clock back as it
+    // left it.
+    if (clockStep.entry.kind === 'live') this.goLive(firstRealObjectsVisit)
+    else if (clockStep.entry.kind === 'restore') this.restoreClock(clockStep.entry.clock)
+    // The first game starts running; a left game waits where it was, paused. Both are seen face-on.
+    if (mode === 'maneuvers' && previousMode !== 'maneuvers') { this.maneuvers.enter(); this.frameManeuverGame(); this.publishManeuvers(true) }
+    if (mode === 'routePlanner' && previousMode !== 'routePlanner') {
+      if (!this.routePlannerVisited) { this.routePlannerVisited = true; this.setShell(shellEnteringRoutePlanner(this.shell)) }
+      this.routePlanner.enter()
+      this.framedLive = null
+      this.routeCameraApplied = null
+      this.publishRoutePlanner()
+      this.frameRoute(true)
+    }
+    recordUsage({ type: 'mode', mode })
+  }
+
+  /** Opens the mode a mode link names, at its starting view, once the
+   *  application is ready. */
+  private openModeLink(): void {
+    if (!this.ready || this.disposed) return
+    const mode = takeModeLink(window)
+    if (mode !== null) this.changeMode(mode)
+  }
+
   /** The current time at 1×, playing forward. The first live
    *  view also turns towards the sunlit hemisphere: the
    *  default camera direction suits Orbit Lab's March instant but faces
@@ -1004,8 +1240,28 @@ export class Application {
     if (faceDaylight && environment) this.sceneRoot.focusDirection(daylightViewDirection(projectInertialToRender(environment.sunDirectionProjectInertial)), this.reducedMotion() ? 0 : 700)
   }
 
+  private clockSnapshot(): ClockSnapshot {
+    return { instant: this.clock.currentInstant(), speedMultiplier: this.clock.speedMultiplier, playing: this.clock.playing, reversed: this.clock.reversed }
+  }
+
+  /** Puts the clock back as Orbit Lab left it. The clock jumps, so recorded
+   *  trails restart. */
+  private restoreClock(clock: ClockSnapshot): void {
+    if (!this.ready || this.disposed) return
+    this.clock.setInstant(clock.instant)
+    this.clock.speedMultiplier = clock.speedMultiplier
+    this.clock.playing = clock.playing
+    this.clock.reversed = clock.reversed
+    this.runtime.requestGroundTrackRefresh(selectionProjection(this.store.getState()).primaryId)
+    this.runtime.clearGroundTrackHistories()
+    const state = this.store.getState()
+    this.commitState({ ...state, simulation: { ...state.simulation, currentInstant: this.clock.currentInstant(), speedMultiplier: clock.speedMultiplier, playing: clock.playing, reversed: clock.reversed } })
+  }
+
   private applyEnvironment(instant: SimulationInstant): EnvironmentState['orientation'] {
-    const env = environmentAt(instant)
+    const held = this.routeEarthHeld !== null && this.store.getState().activeMode === 'routePlanner' ? environmentAt(this.routeEarthHeld).orientation : null
+    const actual = environmentAt(instant)
+    const env = held === null ? actual : { ...actual, orientation: held }
     const sunRender = projectInertialToRender(env.sunDirectionProjectInertial)
     if (this.earth) {
       setEarthSunDirectionRender(this.earth, sunRender)
@@ -1121,7 +1377,7 @@ export class Application {
           : intent === 'include'
           ? selectMany(scene, [...scene.selection.ids, id])
           : setSelection(scene, { ids: scene.selection.ids.filter((candidate) => candidate !== id), primaryId: scene.selection.primaryId })
-    let next = withScene(state, state.activeMode, selection)
+    let next = withActiveScene(state, () => selection)
     if (next !== state && state.activeMode === 'orbitLab') next = { ...next, orbitLab: { ...next.orbitLab, authoring: { ...next.orbitLab.authoring, lastConstraint: { kind: 'none' } } } }
     this.commitState(next)
   }
@@ -1132,22 +1388,22 @@ export class Application {
     const scene = activeScene(state)
     const nextScene = removeObjects(scene, ids)
     if (nextScene !== scene && ids.some((id) => this.groupProvenance.delete(id))) this.ui.setGroupProvenance(new Map(this.groupProvenance))
-    let next = withScene(state, state.activeMode, nextScene)
+    let next = withActiveScene(state, () => nextScene)
     if (next !== state && state.activeMode === 'orbitLab') next = { ...next, orbitLab: { ...next.orbitLab, authoring: { ...next.orbitLab.authoring, lastConstraint: { kind: 'none' } } } }
     this.commitState(next)
     const removed = scene.objects.filter((object) => ids.includes(object.id))
-    if (this.recordUndo(state, provenance, state.activeMode)) this.ui.announceSceneChange({ kind: 'removed', names: removed.map((object) => object.name), all: nextScene.objects.length === 0 && removed.length > 1 })
+    if (this.recordUndo(state, provenance, activeSceneMode(state))) this.ui.announceSceneChange({ kind: 'removed', names: removed.map((object) => object.name), all: nextScene.objects.length === 0 && removed.length > 1 })
   }
 
   private setSceneSelection(selection: SceneSelection): void {
     const state = this.store.getState()
-    let next = withScene(state, state.activeMode, setSelection(activeScene(state), selection))
+    let next = withActiveScene(state, () => setSelection(activeScene(state), selection))
     if (next !== state && state.activeMode === 'orbitLab') next = { ...next, orbitLab: { ...next.orbitLab, authoring: { ...next.orbitLab.authoring, lastConstraint: { kind: 'none' } } } }
     this.commitState(next)
   }
 
   /** One-shot rotation about the Earth's centre that brings the single
-   *  selected object to the camera side at the current distance (4.8). */
+   *  selected object to the camera side at the current distance. */
   private focusSelected(): void {
     if (!this.ready || this.disposed) return
     const object = getSelectedObject(this.store.getState())
@@ -1160,7 +1416,7 @@ export class Application {
 
   private clearSceneSelection(): void {
     const state = this.store.getState()
-    this.commitState(withScene(state, state.activeMode, clearSelection(activeScene(state))))
+    this.commitState(withActiveScene(state, () => clearSelection(activeScene(state))))
   }
 
   private addTle(input: string, jumpToEpoch: boolean): void {
@@ -1345,7 +1601,7 @@ export class Application {
 
   /** Keeps at most one undoable change, recorded around
    *  adds, removals and orbit creation. True when a change was recorded. */
-  private recordUndo(before: AppState, provenanceBefore: ReadonlyMap<string, readonly GroupMembership[]>, mode: ProductMode): boolean {
+  private recordUndo(before: AppState, provenanceBefore: ReadonlyMap<string, readonly GroupMembership[]>, mode: SceneMode | null): boolean {
     const entry = recordSceneChange(before, this.store.getState(), mode)
     if (!entry) return false
     // A group add also gives members already in the scene its provenance, so
@@ -1586,8 +1842,13 @@ export class Application {
 
   /** Replaces only `mode`'s scene in one commit, sets
    *  the opening clock and resets everything that belonged to the old scene. */
-  private applySharedScene(mode: ProductMode, resolved: ResolvedSceneDocument): void {
+  private applySharedScene(mode: SceneMode, resolved: ResolvedSceneDocument): void {
     if (!this.ready || this.disposed) return
+    // Opening a scene leaves a game where it was, as a mode switch does.
+    if (this.store.getState().activeMode === 'maneuvers') this.maneuvers.leave()
+    if (this.store.getState().activeMode === 'routePlanner') this.routePlanner.leave()
+    // The scene brings its own clock.
+    this.labClock = null
     // A link can be the first entry into Real Objects; like any
     // first entry it then follows real time at 1×. Later opens keep the speed.
     const firstRealObjectsVisit = mode === 'realObjects' && !this.realObjectsVisited
@@ -1622,6 +1883,8 @@ export class Application {
     this.fitFrame = requestAnimationFrame(() => {
       this.fitFrame = undefined
       if (this.disposed) return
+      if (this.store.getState().activeMode === 'maneuvers') { if (this.maneuverDisplay === 'altitude') this.planeView.fit(); else if (!this.fitManeuverGame(0)) this.retryFitOnResize = true; return }
+      if (this.store.getState().activeMode === 'routePlanner') { this.frameRoute(false); return }
       const objects = activeScene(this.store.getState()).objects
       const chosen = this.fitIds === null ? objects : objects.filter((object) => this.fitIds!.includes(object.id))
       if (!this.fitNow(chosen.length > 0 ? chosen : objects)) this.retryFitOnResize = true
@@ -1629,9 +1892,13 @@ export class Application {
   }
 
   /** Fits the camera to `objects` immediately; false when the view has no usable size. */
-  private fitNow(objects: readonly OrbitalObject[]): boolean {
+  private fitNow(objects: readonly OrbitalObject[]): boolean { return this.fitRadius(orbitCollectionRadius(objects)) }
+
+  /** Fits the camera to a sphere about Earth's centre, at once or eased; false
+   *  when the view has no usable size. */
+  private fitRadius(radius: number, durationMs = 0): boolean {
     const canvas = this.sceneRoot.renderer.domElement.getBoundingClientRect()
-    const radius = orbitCollectionRadius(objects)
+    const place = (distance: number) => { if (durationMs > 0) this.sceneRoot.easeDistance(distance, radius, durationMs); else this.sceneRoot.fitDistance(distance, radius) }
     // Mobile fits into the visible region it reports.
     const region = this.ui.framingInsets(canvas)
     if (region) {
@@ -1640,7 +1907,7 @@ export class Application {
         insetTopCssPx: region.top, insetBottomCssPx: region.bottom, minDistance: this.sceneRoot.controls.minDistance })
       if (fit === null) return false
       this.sceneRoot.setFramingOffset(fit.offsetXCssPx, fit.offsetYCssPx, this.reducedMotion() ? 0 : FRAMING_EASE_MS)
-      this.sceneRoot.fitDistance(fit.distance, radius)
+      place(fit.distance)
       return true
     }
     const insets = occlusionInsets(canvas, this.ui.getOccludingRects())
@@ -1649,8 +1916,267 @@ export class Application {
       insetTopCssPx: insets.top, insetBottomCssPx: insets.bottom,
       minDistance: this.sceneRoot.controls.minDistance })
     if (distance === null) return false
-    this.sceneRoot.fitDistance(distance, radius)
+    place(distance)
     return true
+  }
+
+  /** The game drives the one shared clock; time always runs forward in it. */
+  private setGameClock(setting: ClockSetting, instant?: SimulationInstant): void {
+    this.clock.reversed = false
+    this.clock.speedMultiplier = setting.speedMultiplier
+    this.clock.playing = setting.playing
+    if (instant) this.clock.setInstant(instant)
+    const state = this.store.getState()
+    this.commitState({ ...state, simulation: { ...state.simulation, reversed: false, speedMultiplier: setting.speedMultiplier, playing: setting.playing, currentInstant: this.clock.currentInstant() } })
+  }
+
+  /** The radius that holds both orbits whole, in render units. */
+  private maneuverRadius(game: ManeuverGame, at: SimulationInstant): number {
+    return Math.max(deriveOrbitValues(playerSegmentAt(game, at).geometry).apoapsisRadiusKm, game.target.geometry.semiMajorAxisKm) * RENDER_UNITS_PER_KM
+  }
+
+  private fitManeuverGame(durationMs: number): boolean {
+    const game = this.maneuvers.game
+    if (!game) return false
+    const radius = this.maneuverRadius(game, this.clock.currentInstant())
+    if (!this.fitRadius(radius, durationMs)) return false
+    this.maneuverFitRadius = radius
+    return true
+  }
+
+  /** Fits both orbits and turns the view to look straight down onto the
+   *  game's plane, where both orbits are drawn true to shape. */
+  private frameManeuverGame(): void {
+    const game = this.maneuvers.game
+    if (!game || !this.ready || this.disposed) return
+    if (this.maneuverDisplay === 'altitude') { this.planeView.fit(); return }
+    if (!this.fitManeuverGame(0)) this.retryFitOnResize = true
+    this.sceneRoot.focusDirection(projectInertialToRender(orbitPlaneBasis(game.setup.plane).normal), this.reducedMotion() ? 0 : FOCUS_EASE_MS)
+  }
+
+  /** Draws the game for this frame; the view only grows to keep a raised
+   *  orbit whole, it never shrinks on its own. */
+  private drawManeuvers(): void {
+    const game = this.store.getState().activeMode === 'maneuvers' ? this.maneuvers.game : null
+    this.maneuverView.setVisible(game !== null)
+    if (!game) return
+    const at = this.clock.currentInstant()
+    this.maneuverView.update({
+      player: segmentState(playerSegmentAt(game, at), at),
+      target: segmentState(game.target, at),
+      playerTrail: playerTrail(game, at),
+      targetTrail: targetTrail(game, at),
+      arc: predictionArc(game, at),
+      apsides: this.drawnApsides(game, at),
+      warningRadiusKm: EARTH_RADIUS_KM + MANEUVER_RULES.reentryAltitudeKm,
+    })
+    if (this.maneuverRadius(game, at) > this.maneuverFitRadius * 1.02) this.fitManeuverGame(this.reducedMotion() ? 0 : CONTAINMENT_EASE_MS)
+  }
+
+  /** The apogee and perigee marks for this frame, kept for the labels drawn after them. */
+  private drawnApsides(game: ManeuverGame, at: SimulationInstant): readonly OrbitApsis[] {
+    this.maneuverApsides = this.maneuverAid ? orbitApsides(game, at) : []
+    return this.maneuverApsides
+  }
+
+  /** The satellites' labels, then one for each apogee or perigee mark. */
+  private pinManeuverLabels(markers: { readonly player: ScreenPoint | null; readonly target: ScreenPoint | null; readonly apsides: readonly (ScreenPoint | null)[] }): void {
+    const t = text().maneuvers
+    this.labels.setPinned([
+      { text: t.you, at: markers.player },
+      { text: t.target, at: markers.target },
+      ...this.maneuverApsides.map((apsis, index) => ({ text: apsisLabel(apsis), at: markers.apsides[index] ?? null })),
+    ])
+  }
+
+  private altitudeViewShown(): boolean {
+    return this.maneuverDisplay === 'altitude' && this.store.getState().activeMode === 'maneuvers' && this.maneuvers.game !== null
+  }
+
+  /** The orbital plane altitude view for this frame, in place of the 3D view. */
+  private drawAltitudeView(): void {
+    const game = this.maneuvers.game
+    if (!game) return
+    const nowMs = performance.now()
+    // Panels move rarely; their outline is read a few times a second.
+    if (nowMs - this.planeInsetsMs > 250) { this.planeInsetsMs = nowMs; this.planeView.setInsets(this.planeInsets()) }
+    const at = this.clock.currentInstant()
+    const player = playerSegmentAt(game, at)
+    this.maneuverView.setVisible(false)
+    this.labels.setPrimary(null, null)
+    this.planeView.draw({
+      basis: orbitPlaneBasis(game.setup.plane),
+      player: segmentState(player, at).positionProjectInertialKm,
+      target: segmentState(game.target, at).positionProjectInertialKm,
+      playerTrail: playerTrail(game, at),
+      targetTrail: targetTrail(game, at),
+      arc: predictionArc(game, at),
+      apsides: this.drawnApsides(game, at),
+      warningRadiusKm: EARTH_RADIUS_KM + MANEUVER_RULES.reentryAltitudeKm,
+      extentAltitudeKm: Math.max(deriveOrbitValues(player.geometry).apoapsisAltitudeKm, game.target.geometry.semiMajorAxisKm - EARTH_RADIUS_KM),
+    })
+    this.pinManeuverLabels(this.planeView.markerPositions())
+  }
+
+  /** The parts of the view covered by interface panels: the phone's reported
+   *  region, or the desktop shell regions. */
+  private planeInsets(): PlaneInsets {
+    const canvas = this.sceneRoot.renderer.domElement.getBoundingClientRect()
+    return this.ui.framingInsets(canvas) ?? occlusionInsets(canvas, this.ui.getOccludingRects())
+  }
+
+  /** A render-frame point on screen, or null when it is outside the view. */
+  private screenPoint(position: { readonly x: number; readonly y: number; readonly z: number } | null): ScreenPoint | null {
+    if (position === null) return null
+    const canvas = this.sceneRoot.renderer.domElement
+    const viewport = { width: canvas.clientWidth, height: canvas.clientHeight }
+    const projected = this.picker.project(position, viewport)
+    return projected && projected.x >= 0 && projected.y >= 0 && projected.x <= viewport.width && projected.y <= viewport.height ? projected : null
+  }
+
+  /** The labels of the mode in view: the game's, the route's, or none. */
+  private updatePinnedLabels(): void {
+    const mode = this.store.getState().activeMode
+    if (mode === 'maneuvers' && this.maneuvers.game) {
+      const markers = this.maneuverView.markerPositions()
+      this.pinManeuverLabels({ player: this.screenPoint(markers.player), target: this.screenPoint(markers.target), apsides: markers.apsides.map((position) => this.screenPoint(position)) })
+      return
+    }
+    if (mode !== 'routePlanner') { this.labels.setPinned([]); return }
+    // The dots carry no names: the key in the corner says which is which.
+    const playback = this.routePlanner.playbackSnapshot()
+    const burn = playback === null || playback.point.burnIndex === null ? undefined : playback.route.burns[playback.point.burnIndex]
+    if (playback === null || burn === undefined) { this.labels.setPinned([]); return }
+    const t = text().routePlanner
+    const anchors = this.routeView.anchors()
+    // A phone keeps only the thrust's label: five collide at its width, and the burn
+    // caption names the rest.
+    if (this.presentation.presentation === 'mobile') {
+      this.labels.setPinned([{ text: `${t.burnNumber(playback.point.burnIndex! + 1)} · ${deltaVText(burn.sizeKmPerSecond)}`, at: this.screenPoint(anchors.thrust) }])
+      return
+    }
+    // Most important first: a label too close to one before it is left out.
+    this.labels.setPinned(declutteredLabels([
+      { text: `${t.burnNumber(playback.point.burnIndex! + 1)} · ${deltaVText(burn.sizeKmPerSecond)}`, at: this.screenPoint(anchors.thrust) },
+      { text: t.playback.velocityAfter, at: this.screenPoint(anchors.after) },
+      { text: t.playback.velocityBefore, at: this.screenPoint(anchors.before) },
+      // In words, as seen riding along: forward or back, left or right, up or down.
+      { text: partWords(burn.components.progradeKmPerSecond, t.directions.forward, t.directions.back), at: this.screenPoint(anchors.parts.prograde) },
+      { text: partWords(burn.components.normalKmPerSecond, t.directions.left, t.directions.right), at: this.screenPoint(anchors.parts.normal) },
+      { text: partWords(burn.components.outwardKmPerSecond, t.directions.up, t.directions.down), at: this.screenPoint(anchors.parts.outward) },
+    ]))
+  }
+
+  /** Planes show once they are about a degree apart, unless the learner chose. */
+  private routePlanesShown(route: Pick<Route, 'own' | 'target'>): boolean {
+    return this.routePlanesChoice ?? planeAngleBetween(route.own.geometry, route.target.geometry) > PLANES_SHOWN_ABOVE_RAD
+  }
+
+  /** Draws the live scene or the route for this frame, or hides both outside the
+   *  Route Planner. */
+  private drawRoute(): void {
+    const shown = this.store.getState().activeMode === 'routePlanner'
+    this.routeView.setVisible(shown)
+    if (!shown) return
+    const playback = this.routePlanner.playbackSnapshot()
+    if (playback === null) {
+      const live = this.routePlanner.liveScene()
+      this.routeView.updateLive({ ...live, planesShown: this.routePlanesShown(live) })
+      this.aimRouteCamera({ ownNormal: orbitNormal(live.own, live.instant), targetNormal: orbitNormal(live.target, live.instant), own: satelliteState(live.own, live.instant) }, null)
+      return
+    }
+    const routeInstantNow = routeInstant(playback.route, playback.point.seconds)
+    this.aimRouteCamera({ ownNormal: normalOf(currentOrbit(playback.route, playback.point.seconds)), targetNormal: orbitNormal(playback.route.target, routeInstantNow), own: stateOnRoute(playback.route, playback.point.seconds) }, playback)
+    const camera = this.sceneRoot.camera
+    const height = this.sceneRoot.renderer.domElement.clientHeight
+    this.routeView.update({
+      route: playback.route,
+      seconds: playback.point.seconds,
+      burn: playback.point.burnIndex === null ? null : { index: playback.point.burnIndex, progress: playback.point.burnProgress },
+      planesShown: this.routePlanesShown(playback.route),
+      drifting: this.routeDrifting,
+      unitsPerPixelAt: (point) => renderUnitsPerPixel(camera.position.distanceTo(point), degToRad(camera.fov), height),
+    })
+  }
+
+  /** Keeps the camera to the chosen view: eased into it when chosen, then following
+   *  every frame. With Turn to each burn, a burn as it begins turns the free view to
+   *  it once. */
+  private aimRouteCamera(scene: RouteCameraScene, playback: RoutePlaybackSnapshot | null): void {
+    const settings = this.routePlanner.cameraSettings()
+    const { frameBurns } = settings
+    const camera = settings.camera === 'follow' && this.routeFollowHeld && playback !== null ? 'faceOn' : settings.camera
+    const direction = cameraDirection(camera, scene)
+    const ease = this.reducedMotion() ? 0 : FOCUS_EASE_MS
+    if (direction !== null) {
+      const towards = projectInertialToRender(direction)
+      if (this.routeCameraApplied !== camera) this.sceneRoot.focusDirection(towards, ease)
+      else if (!this.sceneRoot.turning) this.sceneRoot.lookFrom(towards)
+    }
+    this.routeCameraApplied = camera
+    const burnIndex = playback?.point.burnIndex ?? null
+    const burnKey = burnIndex === null || playback === null ? null : `${playback.route.startInstant.unixSeconds}:${playback.route.arrivalSeconds}:${burnIndex}`
+    if (burnKey !== null && burnKey !== this.routeBurnFramed && frameBurns && camera === 'free') this.sceneRoot.focusDirection(projectInertialToRender(burnViewDirection(playback!.route.burns[burnIndex!]!)), ease)
+    this.routeBurnFramed = burnKey
+  }
+
+  /** Fits the route, or the live scene, in the view; `turn` also turns the view
+   *  to look across both planes. */
+  private frameRoute(turn: boolean): void {
+    if (!this.ready || this.disposed) return
+    const playback = this.routePlanner.playbackSnapshot()
+    if (playback === null) {
+      const live = this.routePlanner.liveScene()
+      const radius = RoutePlanSceneView.pairRadius(live.own, live.target)
+      this.framedLive = { view: 'live', radius }
+      if (!this.fitRadius(radius, this.reducedMotion() || !turn ? 0 : FOCUS_EASE_MS)) { this.retryFitOnResize = true; return }
+      if (turn) this.sceneRoot.focusDirection(projectInertialToRender(routeViewDirection(live, live.instant)), this.reducedMotion() ? 0 : FOCUS_EASE_MS)
+      return
+    }
+    this.framedLive = { view: 'route', radius: RoutePlanSceneView.radius(playback.route) }
+    if (!this.fitRadius(RoutePlanSceneView.radius(playback.route))) { this.retryFitOnResize = true; return }
+    if (turn) this.sceneRoot.focusDirection(projectInertialToRender(routeViewDirection(playback.route, routeInstant(playback.route, 0))), this.reducedMotion() ? 0 : FOCUS_EASE_MS)
+  }
+
+  /** The playback bar follows every frame in the Route Planner. */
+  private publishRoutePlayback(): void {
+    const playback = this.store.getState().activeMode === 'routePlanner' ? this.routePlanner.playbackSnapshot() : null
+    if (playback === null && !this.routePlaybackShown) return
+    this.routePlaybackShown = playback !== null
+    if (playback !== null && this.routeProfileFor !== playback.route) { this.routeProfileFor = playback.route; this.routeProfileShown = routeProfile(playback.route, playback.timeline) }
+    this.ui.updateRoutePlayback(playback === null ? null : buildRoutePlaybackModel(playback, this.routePlanesShown(playback.route), this.routeDrifting, { ...this.routePlanner.cameraSettings(), followHeld: this.routeFollowHeld, profile: this.routeProfileShown }))
+  }
+
+  /** The game panel, at the interface's readout pace unless something the
+   *  learner acts on changed. */
+  private publishManeuvers(force = false): void {
+    // Each frame's update only matters while the game is in view.
+    if (!force && this.store.getState().activeMode !== 'maneuvers') return
+    const game = this.maneuvers.game
+    if (!game) { if (force) this.ui.updateManeuvers(null, true); return }
+    const model = buildManeuverPanelModel(game, this.clock.currentInstant(), this.maneuverDisplay, this.maneuverAid)
+    const key = maneuverPanelKey(model)
+    this.ui.updateManeuvers(model, force || key !== this.maneuverPanel)
+    this.maneuverPanel = key
+  }
+
+  private publishRoutePlanner(): void {
+    const snapshot = this.routePlanner.snapshot()
+    this.routePanelPublishedMs = performance.now()
+    this.ui.updateRoutePlanner(buildRoutePanelModel(snapshot, this.routePlanesShown(this.routePlanner.playbackSnapshot()?.route ?? this.routePlanner.liveScene())))
+    if (!this.ready || this.store.getState().activeMode !== 'routePlanner') return
+    if (snapshot.view === 'live') {
+      // Back from a route, or objects that no longer fit or are lost in the view.
+      const radius = RoutePlanSceneView.pairRadius(snapshot.setup.own.satellite, snapshot.setup.target.satellite)
+      const framed = this.framedLive
+      if (framed === null || framed.view !== 'live' || radius > framed.radius * LIVE_REFIT_GROWTH || radius < framed.radius * LIVE_REFIT_SHRINK) this.frameRoute(framed?.view !== 'live')
+      return
+    }
+    // A route newly played turns the view to it.
+    const route = this.routePlanner.playbackSnapshot()?.route ?? null
+    if (route === null || (route === this.framedRoute && this.framedLive?.view === 'route')) return
+    this.framedRoute = route
+    this.frameRoute(true)
   }
 
   /** Dev-only scale harness surface. Production code
@@ -1678,6 +2204,7 @@ export class Application {
       // The same steps as advanceSimulationFrame, timed by phase.
       stepFrame: (deltaSeconds, nowMs, wallNowMs) => {
         const t0 = performance.now()
+        this.playRoute(deltaSeconds)
         this.clock.advance(deltaSeconds, wallNowMs)
         const instant = this.clock.currentInstant()
         this.frameDependencies.publishInstant(instant)
@@ -1687,7 +2214,8 @@ export class Application {
         this.updateReadouts(samples, instant, nowMs)
         const t2 = performance.now()
         this.interaction.frame(performance.now())
-        if (!this.mapCoversScene()) { this.updateGuides(); this.sceneRoot.render(); this.updatePrimaryLabel() }
+        if (!this.mapCoversScene()) { this.updateGuides(); this.drawRoute(); this.sceneRoot.render(); this.updatePrimaryLabel(); this.updatePinnedLabels() }
+        this.publishRoutePlayback()
         const t3 = performance.now()
         this.map.render()
         const t4 = performance.now()
@@ -1769,6 +2297,10 @@ export class Application {
     this.chooser.dispose()
     this.labels.dispose()
     this.guides.dispose()
+    this.maneuverView.dispose()
+    this.routeView.dispose()
+    this.planeView.dispose()
+    this.routePlanner.dispose()
     this.myPlaceMarker.dispose()
     this.myPlaceRequest += 1
     this.observer = null
@@ -1776,6 +2308,7 @@ export class Application {
     this.retryFitOnResize = false
     this.runtime.dispose()
     this.sharing.dispose()
+    this.stopModeLinks?.()
     this.catalogue.dispose()
     this.map.dispose()
     for (const view of this.starFieldViews) view.dispose()

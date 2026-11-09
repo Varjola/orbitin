@@ -76,9 +76,15 @@
 .m-topbar { position: absolute; top: 0; right: 0; left: 0; display: flex; align-items: center; gap: 0.25rem; height: var(--m-topbar-height); padding: var(--m-safe-top) calc(var(--m-gutter) + var(--m-safe-right)) 0 calc(var(--m-gutter) + var(--m-safe-left)); background: transparent; pointer-events: none; }
 .m-topbar > * { pointer-events: auto; }
 .m-mark { width: 1.75rem; height: 1.75rem; flex: none; margin: 0 0.5rem 0 0.25rem; }
-.m-mode-switch { display: flex; flex: 1 1 auto; min-width: 0; max-width: 20rem; margin: 0 auto; padding: 0; border: 1px solid var(--line); border-radius: 999px; background: rgba(18, 35, 53, 0.9); }
-.m-mode { flex: 1 1 0; min-width: 0; min-height: var(--touch-target); padding: 0 0.625rem; overflow: hidden; border: 0; border-radius: 999px; background: transparent; color: var(--muted-strong); font: 600 var(--m-text-label)/1.15 var(--m-font); text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
-.m-mode[aria-pressed="true"] { background: var(--m-accent); color: #04121c; }
+.m-mode-button { display: flex; flex: 0 1 auto; align-items: center; gap: 0.375rem; min-width: 0; min-height: var(--touch-target); margin: 0 auto; padding: 0 0.75rem; border: 1px solid var(--line); border-radius: 999px; background: rgba(18, 35, 53, 0.9); color: var(--text); font-size: var(--m-text-secondary); font-weight: 600; line-height: 1.1; cursor: pointer; }
+.m-mode-button[aria-expanded="true"] { border-color: var(--m-accent); }
+.m-mode-button:disabled { opacity: 0.45; cursor: default; }
+.m-mode-button-icon { display: grid; place-items: center; color: var(--m-accent); }
+.m-mode-button-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-mode-button-chevron { width: 1rem; height: 1rem; color: var(--muted-strong); transition: transform 180ms ease; }
+.m-mode-button[aria-expanded="true"] .m-mode-button-chevron { transform: rotate(180deg); }
+.m-mode-cards { display: grid; gap: 0.25rem; padding: 0 var(--m-gutter) 0.75rem; }
+.m-mode-cards .mode-card { min-height: var(--touch-target); }
 
 /* View tools: three round buttons below the top bar. The
    menu button above them matches them. */
@@ -106,9 +112,9 @@
 .m-time-clock { font: 600 var(--m-text-label)/1.15 var(--m-font); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .m-time-date { display: none; color: var(--muted-strong); font-size: var(--m-text-caption); font-variant-numeric: tabular-nums; line-height: 1.15; }
 .m-time-meta { display: flex; align-items: baseline; gap: 0.35rem; }
-.m-live { flex: none; white-space: nowrap; color: var(--m-live, #7ee0a0); font-size: var(--m-text-caption); font-weight: 700; letter-spacing: 0.04em; line-height: 1.15; text-transform: uppercase; }
-.m-live::before { content: ''; display: inline-block; width: 0.45em; height: 0.45em; margin-right: 0.3em; border-radius: 50%; background: currentColor; vertical-align: 0.1em; }
-.m-live[hidden] { display: none; }
+.m-live-badge { flex: none; white-space: nowrap; color: var(--m-live, #7ee0a0); font-size: var(--m-text-caption); font-weight: 700; letter-spacing: 0.04em; line-height: 1.15; text-transform: uppercase; }
+.m-live-badge::before { content: ''; display: inline-block; width: 0.45em; height: 0.45em; margin-right: 0.3em; border-radius: 50%; background: currentColor; vertical-align: 0.1em; }
+.m-live-badge[hidden] { display: none; }
 .m-dock-button { display: inline-flex; align-items: center; gap: 0.25rem; min-width: var(--touch-target); min-height: var(--touch-target); padding: 0 0.75rem 0 0.5rem; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); color: var(--text); font: 600 var(--m-text-body)/1.15 var(--m-font); white-space: nowrap; cursor: pointer; }
 .m-dock-button[aria-pressed="true"], .m-dock-button[aria-expanded="true"], .m-new[aria-expanded="true"] { border-color: var(--m-accent); background: var(--m-accent-soft); }
 .m-new { border: 1px solid var(--line-strong); background: var(--surface); }
@@ -116,6 +122,61 @@
 @media (max-width: 389px) { .m-edit .m-icon { display: none; } .m-edit { padding-left: 0.75rem; } }
 
 /* Panels: one at a time, above the dock. */
+/* Interception: the thruster bar above the dock, and the game panel. */
+.m-bottom > .m-burn-bar { order: 3; }
+.m-burn-bar { display: grid; gap: 0.375rem; padding: 0.5rem calc(var(--m-gutter) + var(--m-safe-right)) 0.375rem calc(var(--m-gutter) + var(--m-safe-left)); }
+.m-burn-bar[hidden] { display: none; }
+/* The goals as plain text at the altitude view's top left; a tap opens the game panel. */
+.m-goals { position: absolute; top: calc(var(--m-topbar-height) + 0.25rem); left: calc(var(--m-gutter) + var(--m-safe-left)); display: flex; align-items: flex-start; max-width: calc(100% - 2 * var(--m-gutter) - var(--m-safe-left) - var(--m-safe-right) - var(--touch-target) - 0.5rem); min-height: var(--touch-target); padding: 0; border: 0; background: transparent; color: var(--text); font: 600 var(--m-text-secondary)/1.2 var(--m-font); text-align: left; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 0.5rem rgba(0, 0, 0, 0.85); cursor: pointer; pointer-events: auto; }
+.m-goals[hidden] { display: none; }
+.m-goals:disabled { opacity: 0.45; cursor: default; }
+.m-goals[data-outcome="won"] { color: #7ee0a6; }
+.m-goals[data-outcome="reentered"], .m-goals.is-low .m-burn-goal:not(.is-met) { color: #ffb38f; }
+.m-goals[data-outcome="won"] .m-burn-goals, .m-goals[data-outcome="reentered"] .m-burn-goals { display: none; }
+/* The tank as an upright gauge under the view tools. */
+.m-fuel { display: grid; justify-items: center; gap: 0.25rem; pointer-events: none; }
+.m-fuel[hidden] { display: none; }
+.m-fuel-track { position: relative; width: 0.625rem; height: 6.5rem; overflow: hidden; border-radius: 999px; background: rgba(9, 22, 37, 0.86); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), 0 0.25rem 1rem rgba(0, 0, 0, 0.35); }
+.m-fuel-fill { position: absolute; right: 0; bottom: 0; left: 0; border-radius: 999px; background: #56b4e9; }
+.m-fuel-label { color: var(--muted-strong); font: 600 var(--m-text-caption, 0.75rem)/1 var(--m-font); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95); }
+.m-burn-goals { display: flex; flex: 1 1 auto; flex-direction: column; gap: 0.125rem; min-width: 0; }
+.m-burn-goal { display: inline-flex; align-items: center; gap: 0.2rem; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.m-burn-goal-mark::before, .m-game-goal-mark::before { content: '○'; }
+.m-burn-goal.is-met, .m-game-goal.is-met .m-game-goal-value { color: #7ee0a6; }
+.m-burn-goal.is-met .m-burn-goal-mark::before, .m-game-goal.is-met .m-game-goal-mark::before { content: '✓'; color: #7ee0a6; }
+.m-burn-outcome { flex: 1 1 auto; }
+.m-burn-outcome[hidden] { display: none; }
+.m-burn-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 0.5rem; }
+.m-burn-button { min-width: 0; min-height: 3.25rem; padding: 0 0.5rem; border: 1px solid rgba(86, 180, 233, 0.6); border-radius: 0.875rem; background: var(--surface); color: var(--text); font: 700 var(--m-text-label)/1.1 var(--m-font); touch-action: none; cursor: pointer; }
+/* Held until the finger lifts, wherever it moves: no pan, selection or callout
+   may take the touch (this outranks the shell's touch-action for buttons). */
+.mobile-ui-root .m-burn-button { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.m-burn-button.is-burning { border-color: #56b4e9; background: #56b4e9; color: #04121c; }
+.m-burn-button:disabled { opacity: 0.45; cursor: default; }
+.m-burn-aid .m-switch-label { font-size: var(--m-text-secondary); }
+.m-game { display: grid; gap: 0.5rem; padding: 0 calc(var(--m-gutter) + 0.5rem) 0.75rem; }
+.m-game-status { margin: 0; padding: 0.625rem 0.75rem; border: 1px solid var(--line-strong); border-radius: 0.75rem; }
+.m-game-status[hidden] { display: none; }
+.m-game-status[data-outcome="won"] { border-color: rgba(126, 224, 166, 0.75); background: rgba(126, 224, 166, 0.1); }
+.m-game-status[data-outcome="reentered"] { border-color: rgba(213, 94, 0, 0.9); background: rgba(213, 94, 0, 0.12); }
+.m-game-goals { display: grid; gap: 0.375rem; margin: 0; padding: 0; list-style: none; }
+.m-game-goal { display: grid; grid-template-columns: 1.25rem minmax(0, 1fr) auto; gap: 0.375rem; align-items: baseline; font-size: var(--m-text-secondary); }
+.m-game-goal-value { color: var(--muted-strong); font-variant-numeric: tabular-nums; text-align: right; }
+.m-game-tank { height: 0.5rem; overflow: hidden; border-radius: 999px; background: rgba(255, 255, 255, 0.12); }
+.m-game-tank-fill { display: block; height: 100%; border-radius: 999px; background: #56b4e9; }
+.m-game-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.25rem 1rem; margin: 0.25rem 0; font-size: var(--m-text-secondary); }
+.m-game-facts dt { color: var(--muted); }
+.m-game-facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+.m-game-orbits { width: 100%; border-collapse: collapse; font-size: var(--m-text-secondary); font-variant-numeric: tabular-nums; }
+.m-game-orbits th, .m-game-orbits td { padding: 0.25rem 0.25rem; text-align: right; }
+.m-game-orbits th[scope="row"] { color: var(--muted); font-weight: 500; text-align: left; }
+.m-game-you { color: #56b4e9; }
+.m-game-target { color: #f0e442; }
+.m-game-orbits td.is-warning, .m-game-low { color: #ffb38f; }
+.m-game-burns { display: grid; gap: 0.25rem; margin: 0; padding-left: 1.25rem; font-size: var(--m-text-secondary); font-variant-numeric: tabular-nums; }
+.m-game-confirm[hidden] { display: none; }
+.m-game-model summary { min-height: var(--touch-target); line-height: var(--touch-target); cursor: pointer; font-weight: 600; }
+.m-game-model ul { display: grid; gap: 0.375rem; margin: 0; padding-left: 1.25rem; color: var(--muted-strong); font-size: var(--m-text-secondary); }
 .m-panel { position: relative; display: flex; flex-direction: column; max-height: 38dvh; border-top: 1px solid var(--line-strong); border-radius: 1rem 1rem 0 0; background: var(--m-panel-surface); box-shadow: 0 -0.5rem 1.5rem rgba(0, 0, 0, 0.35); }
 .m-panel[hidden] { display: none; }
 .m-panel.is-expanded { max-height: calc(85dvh - var(--m-dock-height)); }
@@ -133,14 +194,17 @@
   .m-panel.is-expanded { max-height: none; }
   .m-panel-content { padding-right: calc(1rem + var(--m-safe-right)); padding-left: 1rem; }
   .m-panel-header { padding-left: 1rem; }
-  .m-view-tools { right: auto; left: calc(var(--m-gutter) + var(--m-safe-left)); }
+  .m-view-tools:not(.is-game) { right: auto; left: calc(var(--m-gutter) + var(--m-safe-left)); }
 }
 
 /* Time panel. */
 .m-time-panel .m-button-row { justify-content: flex-start; }
+.m-time-speed[hidden] { display: none; }
+.m-time-speed input { padding: 0; border: 0; background: transparent; }
+.m-time-speed-value { color: var(--gold); font-variant-numeric: tabular-nums; }
 
 /* Immersive mode: every control fades out. */
-.mobile-ui-root :is(.m-topbar, .m-view-tools, .m-bottom > .m-chip, .m-bottom > .m-panel, .m-bottom > .m-dock) { transition: opacity 250ms ease, visibility 250ms ease; }
+.mobile-ui-root :is(.m-topbar, .m-view-tools, .m-goals, .m-bottom > .m-chip, .m-bottom > .m-panel, .m-bottom > .m-dock) { transition: opacity 250ms ease, visibility 250ms ease; }
 .mobile-ui-root.is-immersive :is(.m-topbar, .m-view-tools, .m-bottom > .m-chip, .m-bottom > .m-panel, .m-bottom > .m-dock) { opacity: 0; visibility: hidden; pointer-events: none; }
 
 /* The shared-scene status, restyled as a compact card at the top. */
@@ -182,6 +246,16 @@
 .m-hint { position: absolute; top: calc(var(--m-topbar-height) + 0.75rem); left: 50%; max-width: min(18.75rem, calc(100% - 7rem)); padding: 0.5rem 0.875rem; transform: translateX(-50%); border-radius: 999px; background: rgba(9, 22, 37, 0.9); color: var(--muted-strong); font-size: var(--m-text-secondary); line-height: 1.3; text-align: center; pointer-events: none; }
 .m-hint[hidden] { display: none; }
 .mobile-ui-root.is-immersive .m-hint { display: none; }
+/* Interception's goals hold the top left; its hint sits under them. */
+.mobile-ui-root:is([data-mode="maneuvers"], [data-mode="routePlanner"]) .m-hint { top: calc(var(--m-topbar-height) + 4.25rem); }
+
+/* Sideways, the modes other than Orbit Lab ask for the phone upright. */
+.mobile-ui-root.is-sideways > :not(.m-turn-upright) { visibility: hidden; }
+.m-turn-upright { position: absolute; z-index: 5; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; padding: 1rem calc(1.5rem + var(--m-safe-right)) 1rem calc(1.5rem + var(--m-safe-left)); background: rgba(3, 9, 18, 0.94); text-align: center; pointer-events: auto; }
+.m-turn-upright[hidden] { display: none; }
+.m-turn-upright h2 { margin: 0; font-size: var(--m-text-heading); }
+.m-turn-upright p { max-width: 32rem; margin: 0; color: var(--muted-strong); }
+.m-turn-upright-icon .m-icon { width: 3rem; height: 3rem; color: var(--m-accent); }
 
 /* Notice: one at a time above the chip and dock. */
 .m-notice-slot { display: flex; justify-content: center; padding: 0 calc(var(--m-gutter) + var(--m-safe-right)) 0.5rem calc(var(--m-gutter) + var(--m-safe-left)); }
@@ -271,6 +345,9 @@
 .m-about-credits dt { margin-top: 0.375rem; color: var(--muted-strong); font-weight: 600; }
 .m-about-credits dd { margin: 0; }
 .m-help-lines { display: grid; gap: 0.625rem; margin: 0; padding-left: 1.25rem; font-size: var(--m-text-body); line-height: 1.4; }
+.m-hohmann { display: grid; gap: 0.625rem; }
+.m-hohmann p { margin: 0; font-size: var(--m-text-body); line-height: 1.4; }
+.m-route-budgets ul { display: grid; gap: 0.375rem; margin: 0; padding-left: 1.1rem; font-size: var(--m-text-body); line-height: 1.4; }
 
 /* Shape strip. */
 .m-shape { gap: 0.5rem; padding-top: 0; }
@@ -389,8 +466,9 @@
    keeps its full accessible name. */
 .m-panel-content { grid-template-columns: minmax(0, 1fr); }
 .m-panel-content > * { min-width: 0; }
-.mobile-ui-root :is(.m-mode, .m-switch-label, .m-toggle-label, .m-orbit-name, .m-example-line, .m-group-title, .m-line, .m-caption, .m-notice-text, .m-panel-heading) { hyphens: auto; overflow-wrap: anywhere; }
-.m-mode { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; line-height: 1.1; white-space: normal; }
+.mobile-ui-root :is(.m-switch-label, .m-toggle-label, .m-orbit-name, .m-example-line, .m-group-title, .m-line, .m-caption, .m-notice-text, .m-panel-heading) { hyphens: auto; overflow-wrap: anywhere; }
+/* Three modes share the switch: a little tighter, and a name breaks only
+   between words, never inside one. */
 .m-live dd { white-space: normal; overflow-wrap: anywhere; }
 .m-card-top { flex-wrap: wrap; }
 .m-card-action { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -417,3 +495,140 @@
 .m-dock-button { padding-right: 0.625rem; }
 @media (max-width: 389px) { .m-edit { padding-left: 0.625rem; } }
 .m-segments { justify-self: start; }
+
+/* Route Planner: the key at the top left, the line above the dock, Edit, Choose and View. */
+.mobile-ui-root .m-route-dot-own { background: #56b4e9; }
+.mobile-ui-root .m-route-dot-target { background: #f0e442; }
+.m-route-key { position: absolute; top: calc(var(--m-topbar-height) + 0.25rem); left: calc(var(--m-gutter) + var(--m-safe-left)); display: flex; flex-direction: column; align-items: flex-start; gap: 0.125rem; max-width: calc(100% - 2 * var(--m-gutter) - var(--m-safe-left) - var(--m-safe-right) - var(--touch-target) - 0.5rem); margin: 0; padding: 0; border: 0; background: transparent; color: var(--text); font: 600 var(--m-text-secondary)/1.2 var(--m-font); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 0.5rem rgba(0, 0, 0, 0.85); list-style: none; pointer-events: none; transition: opacity 250ms ease, visibility 250ms ease; }
+.m-route-key[hidden] { display: none; }
+.m-route-key li { display: inline-flex; align-items: center; gap: 0.375rem; white-space: nowrap; }
+.mobile-ui-root.is-immersive .m-route-key { opacity: 0; visibility: hidden; }
+/* Room for the key: in landscape the view tools go to the left, under it. */
+@media (orientation: landscape) {
+  .m-view-tools.is-route { top: calc(var(--m-topbar-height) + 2.75rem); right: auto; left: calc(var(--m-gutter) + var(--m-safe-left)); }
+}
+/* The strip's top row: the side names keep their room ("Hakeutuja" at 360 px), so Choose is its icon, named. */
+.m-route-choose-button { padding: 0; }
+@media (max-width: 399px), (orientation: landscape) { .m-route-sides .m-dot { display: none; } }
+.m-bottom > .m-route-line { order: 3; }
+.m-route-line { align-self: stretch; min-height: var(--touch-target); margin: 0 calc(var(--m-gutter) + var(--m-safe-right)) 0.5rem calc(var(--m-gutter) + var(--m-safe-left)); padding: 0.375rem 0.875rem; border: 1px solid var(--line-strong); border-radius: 0.875rem; background: rgba(9, 22, 37, 0.92); box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.35); color: var(--text); font: 600 var(--m-text-secondary)/1.3 var(--m-font); font-variant-numeric: tabular-nums; text-align: left; overflow-wrap: anywhere; cursor: pointer; }
+.m-route-line[hidden] { display: none; }
+.mobile-ui-root.is-immersive .m-route-line { display: none; }
+/* The live scene's time reads as on the desktop: shown in full, opening nothing. */
+.m-dock[data-mode="routePlanner"] .m-time:disabled { opacity: 1; cursor: default; }
+.m-route-edit-top { display: flex; align-items: center; gap: 0.375rem; }
+.m-route-sides { flex: 1 1 auto; min-width: 0; }
+.m-route-sides button { display: inline-flex; flex: 1 1 0; align-items: center; justify-content: center; gap: 0.375rem; min-width: 0; padding: 0 0.625rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-route-swap { background: var(--surface); }
+.m-route-choose-button { display: inline-flex; flex: none; align-items: center; justify-content: center; gap: 0.25rem; }
+.m-route-choose-button .m-icon { width: 1.25rem; height: 1.25rem; }
+.m-route-name { min-height: 1.3em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-route-name:empty { display: block; }
+.m-route-choose .m-examples { margin-bottom: 0.25rem; }
+.m-route-choose .m-example[aria-current="true"] { border-color: var(--m-accent); }
+.m-route-choose .m-example[aria-busy="true"], .m-route-choose .m-result[aria-busy="true"] { opacity: 0.7; }
+.m-route-choose .m-search[hidden] { display: none; }
+.m-route-views { display: grid; gap: 0.125rem; }
+.m-route-view[aria-pressed="true"] { border-color: var(--line-strong); background: var(--surface); }
+.m-route-view[aria-pressed="true"] .m-toggle-mark { border-color: var(--m-accent); background: var(--m-accent); box-shadow: inset 0 0 0 2px var(--m-panel-surface); }
+.m-route-view-panel { gap: 0.5rem; }
+/* Route Planner: the Plan sheet, its rows and a route's details. */
+.m-dock-button.is-primary { border-color: transparent; background: var(--m-accent); color: #04121c; }
+.m-route-plan { gap: 0.625rem; }
+.m-route-plan-routes, .m-route-plan-details { display: grid; gap: 0.625rem; }
+.m-route-plan-routes[hidden], .m-route-plan-details[hidden] { display: none; }
+.m-route-plan-status { display: grid; gap: 0.375rem; }
+.m-route-plan-status .m-button[hidden], .m-route-progress[hidden] { display: none; }
+.m-route-progress { width: 100%; height: 0.375rem; accent-color: var(--m-accent); }
+.m-route-plan .route-notes { margin: 0; padding-left: 1.25rem; color: var(--gold); font-size: var(--m-text-secondary); }
+.m-route-plan .route-front { margin: 0; padding: 0; border: 0; }
+.m-route-plan .route-front .group-heading { font-size: var(--m-text-secondary); font-weight: 600; }
+.m-route-plan .route-front > .time-note { display: none; }
+.m-route-plan .route-front-caption, .m-route-plan .route-front-legend { font-size: var(--m-text-caption); }
+/* Marks take a finger: a 44 px target, the mark drawn at its desktop size. */
+.m-route-plan .route-front-point { width: var(--touch-target); height: var(--touch-target); }
+.m-route-plan .route-front-point svg { margin: calc((var(--touch-target) - 18px) / 2); }
+.m-route-plan .route-front-point.is-lit { box-shadow: none; }
+.m-route-plan .route-front-point.is-lit svg { filter: brightness(1.25) drop-shadow(0 0 2px #fff); }
+.m-route-rows { display: grid; gap: 0.25rem; margin: 0; padding: 0; list-style: none; }
+.m-route-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 1.5rem; align-items: center; gap: 0.75rem; width: 100%; min-height: 3rem; padding: 0.25rem 0.75rem; border: 1px solid var(--line); border-radius: 0.75rem; background: transparent; color: var(--text); font: 600 var(--m-text-body)/1.2 var(--m-font); font-variant-numeric: tabular-nums; text-align: left; cursor: pointer; }
+.m-route-row.is-lit { border-color: var(--m-accent); background: var(--m-accent-soft); }
+.m-route-row-cost { color: var(--muted-strong); font-weight: 400; }
+.m-route-row-mark { width: 1.1rem; height: 1.1rem; overflow: visible; }
+.m-route-back { justify-self: start; }
+.m-route-summary { font-size: var(--m-text-heading); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.3; }
+.m-route-family { display: grid; gap: 0.25rem; }
+.m-route-plan .route-timeline { margin: 0; padding: 0; border: 0; }
+.m-route-plan .route-timeline .group-heading { display: none; }
+.m-route-plan .route-profile-caption, .m-route-plan .route-timeline-ends, .m-route-plan .route-timeline .time-note { font-size: var(--m-text-caption); }
+.m-route-plan .route-timeline-strip { height: 1.25rem; }
+.m-route-plan .route-track-burn { font-size: var(--m-text-caption); }
+.m-route-burns { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.m-route-burn { display: grid; gap: 0.125rem; padding: 0.5rem 0.75rem; border: 1px solid var(--line); border-radius: 0.75rem; font-size: var(--m-text-secondary); }
+.m-route-burn strong { font-size: var(--m-text-body); }
+.m-route-burn-head { display: flex; align-items: center; gap: 0.5rem; color: var(--muted-strong); }
+.m-route-burn .route-burn-number { min-width: 1.25rem; height: 1.25rem; font-size: var(--m-text-caption); }
+.m-route-burn-change { color: var(--muted-strong); font-variant-numeric: tabular-nums; }
+.m-route-plan .route-fuel-bar { height: 0.5rem; margin: 0; }
+/* Play stays in reach at the bottom of the sheet while the details scroll. */
+.m-route-play-bar { position: sticky; bottom: -1rem; display: grid; margin: 0 -1rem -1rem; padding: 0.5rem 1rem calc(0.75rem + var(--m-safe-bottom)); background: linear-gradient(to bottom, rgba(9, 22, 37, 0), var(--m-panel-surface) 30%); }
+/* Edit and Plan share the dock with the clock: Edit keeps its icon and its name, Plan its label. */
+.m-dock[data-mode="routePlanner"] .m-route-edit span { display: none; }
+.m-dock[data-mode="routePlanner"] .m-route-edit { justify-content: center; padding: 0; }
+.m-dock[data-mode="routePlanner"] .m-route-edit .m-icon { display: block; }
+/* Route Planner playback: the bar in the dock's place, Exit at its end, and the
+   burn caption above it while no panel is open. */
+.mobile-ui-root.is-route-playback .m-bottom > .m-dock { display: none; }
+.m-bottom > .m-route-caption { order: 3; }
+/* Exit asks first: the stop square sits beside Route. */
+.m-route-exit-text { margin: 0 0 0.75rem; color: var(--muted-strong); font-size: var(--m-text-secondary); line-height: 1.3; }
+.m-route-exit-actions { justify-content: flex-end; }
+.m-bottom > .m-route-bar { order: 4; }
+.m-route-caption { display: flex; align-items: flex-start; gap: 0.5rem; align-self: stretch; margin: 0 calc(var(--m-gutter) + var(--m-safe-right)) 0.5rem calc(var(--m-gutter) + var(--m-safe-left)); padding: 0.5rem 0.75rem; border: 1px solid var(--line-strong); border-radius: 0.875rem; background: rgba(9, 22, 37, 0.92); box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.35); color: var(--text); text-align: left; cursor: pointer; }
+.m-route-caption[hidden] { display: none; }
+.m-route-caption.is-held { border-color: #d55e00; box-shadow: 0 0 0 1px #d55e00, 0 0.25rem 1rem rgba(0, 0, 0, 0.35); }
+.m-route-caption .route-burn-number { min-width: 1.25rem; height: 1.25rem; margin-top: 0.05rem; font-size: var(--m-text-caption); }
+.m-route-caption .route-burn-number[hidden] { display: none; }
+.m-route-caption-text { display: grid; gap: 0.125rem; min-width: 0; }
+.m-route-caption-head { font-size: var(--m-text-secondary); line-height: 1.3; overflow-wrap: anywhere; }
+.m-route-caption-line { color: var(--muted-strong); font-size: var(--m-text-secondary); font-variant-numeric: tabular-nums; line-height: 1.3; }
+.m-route-caption-line:empty { display: none; }
+.m-route-bar { display: grid; gap: 0.25rem; padding: 0.25rem calc(var(--m-gutter) + var(--m-safe-right)) calc(0.25rem + var(--m-safe-bottom)) calc(var(--m-gutter) + var(--m-safe-left)); border-top: 1px solid var(--line); background: var(--m-panel-surface); }
+.m-route-bar[hidden] { display: none; }
+.m-route-bar-row { display: flex; align-items: center; gap: 0.125rem; min-width: 0; }
+.m-route-play { background: var(--surface); }
+.m-route-readout { display: grid; flex: 1 1 auto; min-width: 0; margin: 0 0.25rem; line-height: 1.2; }
+.m-route-elapsed { overflow: hidden; font-size: var(--m-text-label); font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.m-route-rate { overflow: hidden; color: var(--muted-strong); font-size: var(--m-text-caption); font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.m-route-details { flex: none; }
+.m-route-profile { height: 2rem; }
+.m-route-track { position: relative; height: var(--touch-target); }
+.m-route-segments { position: absolute; top: 0.75rem; bottom: 0.75rem; left: 0.6875rem; right: 0.6875rem; overflow: hidden; border-radius: 3px; background: rgba(145, 180, 216, 0.14); }
+.m-route-segments span { position: absolute; top: 0; bottom: 0; }
+.m-route-track .route-track-burn { font-size: var(--m-text-caption); }
+.m-route-timeline { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; background: transparent; -webkit-appearance: none; appearance: none; touch-action: none; }
+.m-route-timeline::-webkit-slider-runnable-track { height: 100%; background: transparent; }
+.m-route-timeline::-webkit-slider-thumb { width: 1.375rem; height: 1.375rem; margin-top: calc((var(--touch-target) - 1.375rem) / 2); border: 3px solid #04121c; border-radius: 50%; background: var(--m-accent); -webkit-appearance: none; appearance: none; }
+.m-route-timeline::-moz-range-track { background: transparent; }
+.m-route-timeline::-moz-range-thumb { width: 1rem; height: 1rem; border: 3px solid #04121c; border-radius: 50%; background: var(--m-accent); }
+.mobile-ui-root.is-immersive :is(.m-route-bar, .m-route-caption) { display: none; }
+.m-route-details-sheet .m-route-burn.is-current { border-color: #d55e00; }
+/* Landscape playback: one band, the profile and timeline beside the controls, and
+   the burn caption at the top right, clear of the view tools and the key. */
+@media (orientation: landscape) {
+  .m-route-bar { grid-template-columns: repeat(3, var(--touch-target)) minmax(6.5rem, auto) minmax(0, 1fr) auto var(--touch-target); column-gap: 0.25rem; row-gap: 0; align-items: center; padding-top: 0.125rem; padding-bottom: calc(0.125rem + var(--m-safe-bottom)); }
+  .m-route-bar-row { display: contents; }
+  .m-route-bar-row > * { grid-row: 1 / span 2; }
+  .m-route-details { grid-column: 6; }
+  .m-route-exit { grid-column: 7; }
+  .m-route-profile { grid-column: 5; grid-row: 1; height: 1.25rem; }
+  .m-route-track { grid-column: 5; grid-row: 2; height: 2.25rem; }
+  .m-route-segments { top: 0.5rem; bottom: 0.5rem; }
+  .m-route-timeline::-webkit-slider-thumb { margin-top: calc((2.25rem - 1.375rem) / 2); }
+  .m-route-details span { display: none; }
+  .m-route-details { justify-content: center; padding: 0; }
+  .m-route-caption { position: fixed; top: calc(var(--m-topbar-height) + 0.5rem); right: calc(var(--m-gutter) + var(--m-safe-right)); width: min(42%, 21rem); margin: 0; }
+}
+/* Below 390 px Plan keeps its label and drops its icon, as Edit does in Orbit Lab. */
+@media (max-width: 389px) { .m-dock .m-route-plan .m-icon { display: none; } .m-dock .m-route-plan { padding-left: 0.75rem; } }.m-route-rate { white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 389px) { .m-route-details span { display: none; } .m-route-details { justify-content: center; padding: 0; } }

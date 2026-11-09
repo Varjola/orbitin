@@ -14,10 +14,12 @@ const fi = catalogueFor('fi')
 /** Finnish strings that are rightly identical to English: product and
  *  provider names, abbreviations, units and formats. */
 const SAME_IN_FINNISH = new Set([
-  'TLE / 3LE', '1×', '1 min/s', '10 min/s', '1 h/s', 'Space-Track.org', '0 ISS\n1 ...\n2 ...',
+  'TLE / 3LE', '1×', '1 min/s', '2 min/s', '10 min/s', '1 h/s', 'Space-Track.org', '0 ISS\n1 ...\n2 ...',
   'Indigo', 'Magenta', 'J2', 'periapsis', 'apoapsis', 'LEO', 'MEO', 'GEO', 'HEO',
   // The product mark, view codes and taught terms kept on mobile.
   'Orbitin', '2D', '3D', 'Periapsis', 'Apoapsis', 'GPS',
+  // The unit of the route's burn table, and the heading of the front table's column.
+  'm/s', 'Δv',
 ])
 
 type Leaf = { readonly path: string; readonly value: unknown }
@@ -68,7 +70,7 @@ describe('the Finnish catalogue', () => {
   })
 
   it('uses the glossary terms', () => {
-    expect(fi.shell.modes).toEqual({ orbitLab: 'Kiertoradan mekaniikat', realObjects: 'Kiertoratojen kappaleet' })
+    expect(fi.shell.modes).toEqual({ orbitLab: 'Kiertoratojen elementit', maneuvers: 'Hakeutuminen', routePlanner: 'Reittisuunnittelu', realObjects: 'Kiertoratojen kappaleet' })
     expect(fi.scene.noun).toBe('näkymä')
     expect(fi.terms.groundTrack).toBe('maareitti')
     expect(fi.inspector.layers.groundTrack).toBe('Maareitti')

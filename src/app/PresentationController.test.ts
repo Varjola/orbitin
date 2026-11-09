@@ -16,7 +16,7 @@ function fakeMedia(matches: boolean) {
 }
 
 describe('PresentationController', () => {
-  it('asks exactly the D1 query and follows its result', () => {
+  it('asks exactly the phone query and follows its result', () => {
     expect(MOBILE_PRESENTATION_QUERY).toBe('(max-width: 699px), (pointer: coarse) and (max-height: 500px)')
     const phone = fakeMedia(true)
     expect(new PresentationController(phone.environment).presentation).toBe('mobile')

@@ -15,7 +15,9 @@ interface EventRule {
   readonly optional?: Readonly<Record<string, PropertyRule>>
 }
 
-const MODES = ['orbitLab', 'realObjects'] as const
+const MODES = ['orbitLab', 'maneuvers', 'routePlanner', 'realObjects'] as const
+/** Only these modes have a scene to share or open. */
+const SCENE_MODES = ['orbitLab', 'realObjects'] as const
 const SHORT_ID = /^[a-z0-9][a-z0-9-]{0,39}$/
 /** A NORAD catalogue number of a public catalogue object: data about the
  * object, not about the visitor. */
@@ -31,8 +33,10 @@ export const USAGE_EVENT_RULES: Readonly<Record<string, EventRule>> = {
   object_added: { required: { source: ['quick-search', 'catalogue', 'group', 'featured', 'manual'] }, optional: { norad: NORAD_ID } },
   group_added: { required: { group: SHORT_ID } },
   example_opened: { required: { example: SHORT_ID } },
-  share: { required: { kind: ['link', 'file', 'native'], mode: MODES, objects: ['0', '1', '2-10', '11-40', '41+'] } },
-  scene_opened: { required: { kind: ['link', 'file', 'example'], mode: MODES } },
+  share: { required: { kind: ['link', 'file', 'native'], mode: SCENE_MODES, objects: ['0', '1', '2-10', '11-40', '41+'] } },
+  scene_opened: { required: { kind: ['link', 'file', 'example'], mode: SCENE_MODES } },
+  maneuver_result: { required: { outcome: ['won', 'reentered', 'restarted', 'new-game'], burns: ['0', '1-2', '3-5', '6-10', '11+'] }, optional: { efficiency: ['under-1.2', '1.2-1.5', '1.5-2', 'over-2'] } },
+  route_planned: { required: { limits: ['none', 'time', 'fuel', 'both'], family: ['direct', 'turnAtNode', 'goHigh', 'drift'], deltaV: ['under-100', '100-500', '500-1000', '1000-3000', '3000-6000', 'over-6000'], duration: ['under-6h', '6-24h', '1-7d', '7-30d', 'over-30d'], sources: ['example', 'catalogue', 'mixed'] } },
   view: { required: { which: ['map-maximized', 'language'] } },
   error: { required: { kind: ['webgl', 'textures', 'context-lost', 'frame', 'uncaught', 'rejection'] } },
 }

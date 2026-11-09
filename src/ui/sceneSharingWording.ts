@@ -4,7 +4,7 @@ import type { SharedSceneSummary } from '../data/sharedScene.ts'
 import { MAX_LINK_MANUAL_REAL_OBJECTS, MAX_LINK_ORBIT_LAB_OBJECTS, MAX_LINK_REAL_OBJECTS, type SceneLinkAvailability, type SceneLinkUnavailable, type SceneTextFailure } from '../data/sceneLink.ts'
 import type { SceneResolutionProblem } from '../app/resolveSceneDocument.ts'
 import { text } from '../i18n/index.ts'
-import type { ProductMode } from '../state/AppState.ts'
+import type { SceneMode } from '../state/AppState.ts'
 import { MAX_SCENE_OBJECTS } from '../state/sceneActions.ts'
 
 /** The logic of every learner-facing sentence of scene
@@ -35,8 +35,8 @@ export function shareDialogModel(summary: SharedSceneSummary, link: SceneLinkAva
   }
 }
 
-export function openConfirmationMessage(mode: ProductMode, replacedCount: number): string { return text().sharing.openConfirmation(mode, replacedCount) }
-export function openIncomingLine(mode: ProductMode, count: number): string { return text().sharing.openIncoming(mode, count) }
+export function openConfirmationMessage(mode: SceneMode, replacedCount: number): string { return text().sharing.openConfirmation(mode, replacedCount) }
+export function openIncomingLine(mode: SceneMode, count: number): string { return text().sharing.openIncoming(mode, count) }
 export function openProgressMessage(catalogueObjectCount: number): string { return text().sharing.openProgress(catalogueObjectCount) }
 
 export function sceneOpenFailureMessage(source: 'link' | 'file', failure: SceneTextFailure): string {
@@ -49,7 +49,7 @@ export function sceneOpenFailureMessage(source: 'link' | 'file', failure: SceneT
 
 const MAX_LISTED_NORAD_IDS = 5
 /** The result notice: one opening line, then one line per problem kind present. */
-export function openResultLines(mode: ProductMode, openedCount: number, problems: readonly SceneResolutionProblem[]): string[] {
+export function openResultLines(mode: SceneMode, openedCount: number, problems: readonly SceneResolutionProblem[]): string[] {
   const t = text().sharing
   const lines = [t.opened(mode, openedCount)]
   const missing = problems.flatMap((problem) => problem.kind === 'catalogue-missing' ? [problem.catalogId] : [])

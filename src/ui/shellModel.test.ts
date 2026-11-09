@@ -5,9 +5,9 @@ import { createDefaultOrbitLabObject, createInitialState } from '../state/initia
 import { buildShellModel } from './shellModel.ts'
 
 const shell = { narrowViewport: false, leftDrawerOpen: true, inspectorOpen: true, timeDrawerOpen: false, viewDrawerOpen: false, mapMaximized: false, catalogueWorkspaceOpen: false, sceneObjectsExpanded: true }
-it('models the initial Orbit Lab orbit and a centered mode selector', () => {
+it('models the initial Orbit Lab orbit', () => {
   const model = buildShellModel({ state: createInitialState(() => 0), shell, catalogue: { kind: 'not-loaded' }, loading: false })
-  expect(model.modeButtons.map((button) => [button.label, button.pressed])).toEqual([['Orbit Lab', true], ['Real Objects', false]])
+  expect(model.mode).toBe('orbitLab')
   expect(model.orbitLab.showEmptyState).toBe(false)
   expect(model.orbitLab.createOrbitEnabled).toBe(true)
   expect(model.inspector.content).toBe('single')

@@ -38,10 +38,20 @@ function finiteTeme(position: { x: number; y: number; z: number }, velocity: { x
   return { positionTemeKm: { x: position.x, y: position.y, z: position.z }, velocityTemeKmPerSecond: { x: velocity.x, y: velocity.y, z: velocity.z } }
 }
 
+/** SGP4's averaged elements at a propagation instant: secular gravity and drag
+ *  included, the periodic terms left out. Angles are in TEME of that instant. */
+export interface Sgp4AveragedElements {
+  readonly semiMajorAxisEarthRadii: number
+  readonly eccentricity: number
+  readonly argOfPerigeeRad: number
+}
+
 export interface SatelliteJsAdapter {
   readonly source: Sgp4MeanElements
   readonly record: SatRec
   temeStateAt(instant: SimulationInstant): TemeState
+  /** The state and the averaged elements, from one propagation. */
+  propagateAt(instant: SimulationInstant): { readonly state: TemeState; readonly averaged: Sgp4AveragedElements }
 }
 
 export function createSatelliteJsAdapter(source: Sgp4MeanElements | { readonly meanElements: Sgp4MeanElements }): SatelliteJsAdapter {
@@ -56,20 +66,27 @@ export function createSatelliteJsAdapter(source: Sgp4MeanElements | { readonly m
   if (!Number.isFinite(epochDelta) || Math.abs(epochDelta) > SATREC_EPOCH_TOLERANCE_SECONDS) {
     throw new OrbitPropagationError('adapterEpochMismatch', 'The SGP4 record epoch does not match the validated source epoch.')
   }
+  const propagate = (instant: SimulationInstant) => {
+    const minutesSinceEpoch = secondsBetween(instant, meanElements.epoch) / 60
+    let result: ReturnType<typeof sgp4>
+    try {
+      result = sgp4(record, minutesSinceEpoch)
+    } catch {
+      throw new OrbitPropagationError('unknown', 'SGP4 failed to propagate this source.', instant)
+    }
+    if (!result) throw new OrbitPropagationError(codeForSatRecError(record.error), 'SGP4 could not propagate this source.', instant)
+    if (checkForDecay(record)) throw new OrbitPropagationError('communityDecayDetected', 'The satellite.js community decay check rejected this state.', instant)
+    return { state: finiteTeme(result.position, result.velocity, instant), mean: result.meanElements }
+  }
   return {
     source: meanElements,
     record,
-    temeStateAt(instant) {
-      const minutesSinceEpoch = secondsBetween(instant, meanElements.epoch) / 60
-      let result: ReturnType<typeof sgp4>
-      try {
-        result = sgp4(record, minutesSinceEpoch)
-      } catch {
-        throw new OrbitPropagationError('unknown', 'SGP4 failed to propagate this source.', instant)
-      }
-      if (!result) throw new OrbitPropagationError(codeForSatRecError(record.error), 'SGP4 could not propagate this source.', instant)
-      if (checkForDecay(record)) throw new OrbitPropagationError('communityDecayDetected', 'The satellite.js community decay check rejected this state.', instant)
-      return finiteTeme(result.position, result.velocity, instant)
+    temeStateAt: (instant) => propagate(instant).state,
+    propagateAt(instant) {
+      const { state, mean } = propagate(instant)
+      const averaged = { semiMajorAxisEarthRadii: mean.am, eccentricity: mean.em, argOfPerigeeRad: mean.om }
+      if (!Object.values(averaged).every(Number.isFinite)) throw new OrbitPropagationError('nonFiniteState', 'SGP4 returned non-finite averaged elements.', instant)
+      return { state, averaged }
     },
   }
 }

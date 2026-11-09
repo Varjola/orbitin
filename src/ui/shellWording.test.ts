@@ -5,7 +5,7 @@ import { sceneFullForManualAdd } from './shellWording.ts'
 
 it('keeps the durable shell vocabulary explicit', () => {
   const t = text()
-  expect(t.shell.modes).toEqual({ orbitLab: 'Orbit Lab', realObjects: 'Real Objects' })
+  expect(t.shell.modes).toEqual({ orbitLab: 'Orbit Lab', maneuvers: 'Interception', routePlanner: 'Route Planner', realObjects: 'Real Objects' })
   expect(t.orbitLab.createOrbit).toBe('Create orbit')
   expect(t.shell.collapseWorkspace).toBe('Collapse workspace')
   expect(t.shell.expandWorkspace).toBe('Expand workspace')

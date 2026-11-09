@@ -12,13 +12,13 @@ import type { ShapeParameter } from './mobileShellState.ts'
 export type RulerParameter = Exclude<ShapeParameter, 'drift'>
 export type ShapeSnap = 'spaceStation' | 'earthObservation' | 'gps' | 'geostationary' | 'circular' | 'equatorial' | 'polar' | 'retrograde' | 'critical' | 'sunSynchronous' | 'periapsis' | 'apoapsis'
 
-export interface SnapPoint {
+export interface SnapPoint<L extends string = ShapeSnap> {
   readonly value: number
   /** A labelled snap point, or null for a plain tick (Node, Periapsis). */
-  readonly label: ShapeSnap | null
+  readonly label: L | null
 }
 
-export interface RulerSpec {
+export interface RulerSpec<L extends string = ShapeSnap> {
   readonly parameter: RulerParameter
   readonly min: number
   readonly max: number
@@ -26,7 +26,9 @@ export interface RulerSpec {
   /** The value grid of a drag. Buttons and keys use `buttonStep`. */
   readonly step: number
   readonly unit: 'km' | '' | 'deg'
-  readonly snaps: readonly SnapPoint[]
+  /** Where the step grid starts: steps land on whole multiples from here. */
+  readonly offset?: number
+  readonly snaps: readonly SnapPoint<L>[]
   valueToPosition(value: number): number
   positionToValue(position: number): number
 }
@@ -53,18 +55,23 @@ const SIZE_MIN_KM = 6678
 const SIZE_MAX_KM = 50000
 const DEG = 180 / Math.PI
 
-function sizeSpec(): RulerSpec {
+/** A Size scale between two semi-major axes, logarithmic in altitude, with
+ *  snap points given as altitudes. */
+export function sizeRulerSpec<L extends string>(minKm: number, maxKm: number, snapAltitudes: readonly (readonly [number, L])[], offset = 0): RulerSpec<L> {
   const altitude = (a: number) => Math.max(1, a - EARTH_RADIUS_KM)
-  const snap = (altitudeKm: number, label: ShapeSnap): SnapPoint => ({ value: altitudeKm + EARTH_RADIUS_KM, label })
   return {
-    parameter: 'size', min: SIZE_MIN_KM, max: SIZE_MAX_KM, wraps: false, step: 1, unit: 'km',
-    snaps: [snap(400, 'spaceStation'), snap(800, 'earthObservation'), snap(20200, 'gps'), snap(35786, 'geostationary')],
+    parameter: 'size', min: minKm, max: maxKm, wraps: false, step: 1, unit: 'km', offset,
+    snaps: snapAltitudes.map(([altitudeKm, label]) => ({ value: altitudeKm + EARTH_RADIUS_KM, label })),
     valueToPosition: (value) => SIZE_PX_PER_E_FOLD * Math.log(altitude(value) / SIZE_REFERENCE_ALTITUDE_KM),
     positionToValue: (position) => SIZE_REFERENCE_ALTITUDE_KM * Math.exp(position / SIZE_PX_PER_E_FOLD) + EARTH_RADIUS_KM,
   }
 }
 
-function linearSpec(parameter: RulerParameter, min: number, max: number, step: number, pxPerUnit: number, unit: RulerSpec['unit'], wraps: boolean, snaps: readonly SnapPoint[]): RulerSpec {
+function sizeSpec(): RulerSpec {
+  return sizeRulerSpec<ShapeSnap>(SIZE_MIN_KM, SIZE_MAX_KM, [[400, 'spaceStation'], [800, 'earthObservation'], [20200, 'gps'], [35786, 'geostationary']])
+}
+
+export function linearSpec<L extends string = ShapeSnap>(parameter: RulerParameter, min: number, max: number, step: number, pxPerUnit: number, unit: RulerSpec['unit'], wraps: boolean, snaps: readonly SnapPoint<L>[]): RulerSpec<L> {
   return {
     parameter, min, max, wraps, step, unit, snaps,
     valueToPosition: (value) => (value - min) * pxPerUnit,
@@ -90,7 +97,7 @@ export function rulerSpec(parameter: RulerParameter, orbit: RulerOrbit): RulerSp
     }
     case 'node':
     case 'periapsis':
-      return linearSpec(parameter, 0, 360, 0.5, TURN_PX_PER_DEGREE, 'deg', true, [0, 90, 180, 270].map((value) => ({ value, label: null })))
+      return linearSpec<ShapeSnap>(parameter, 0, 360, 0.5, TURN_PX_PER_DEGREE, 'deg', true, [0, 90, 180, 270].map((value) => ({ value, label: null })))
     case 'position':
       return linearSpec('position', 0, 360, 0.5, TURN_PX_PER_DEGREE, 'deg', true, [{ value: 0, label: 'periapsis' }, { value: 180, label: 'apoapsis' }])
   }
@@ -103,28 +110,29 @@ export function wrapDegrees(value: number): number {
 }
 
 /** A value brought into the ruler's range: wrapped or clamped. */
-export function normalizeRulerValue(spec: RulerSpec, value: number): number {
+export function normalizeRulerValue<L extends string>(spec: RulerSpec<L>, value: number): number {
   if (!Number.isFinite(value)) return spec.min
   return spec.wraps ? wrapDegrees(value) : Math.min(spec.max, Math.max(spec.min, value))
 }
 
 /** A value on the ruler's step grid, within its range. */
-export function stepRulerValue(spec: RulerSpec, value: number): number {
+export function stepRulerValue<L extends string>(spec: RulerSpec<L>, value: number): number {
   const decimals = Math.max(0, Math.ceil(-Math.log10(spec.step)))
-  const snapped = Number((Math.round(value / spec.step) * spec.step).toFixed(decimals))
+  const offset = spec.offset ?? 0
+  const snapped = offset + Number((Math.round((value - offset) / spec.step) * spec.step).toFixed(decimals))
   return normalizeRulerValue(spec, snapped)
 }
 
 /** The period of a wrapping scale in px, or null. */
-function wrapPeriodPx(spec: RulerSpec): number | null {
+function wrapPeriodPx<L extends string>(spec: RulerSpec<L>): number | null {
   return spec.wraps ? spec.valueToPosition(spec.min + 360) - spec.valueToPosition(spec.min) : null
 }
 
 /** The snap point within `thresholdPx` of `positionPx`, if any. On a
  *  wrapping scale 0° and 360° are the same point. */
-export function applySnap(spec: RulerSpec, positionPx: number, thresholdPx = SNAP_THRESHOLD_PX): SnapPoint | null {
+export function applySnap<L extends string>(spec: RulerSpec<L>, positionPx: number, thresholdPx = SNAP_THRESHOLD_PX): SnapPoint<L> | null {
   const period = wrapPeriodPx(spec)
-  let best: SnapPoint | null = null
+  let best: SnapPoint<L> | null = null
   let bestDistance = Infinity
   for (const snap of spec.snaps) {
     let distance = Math.abs(positionPx - spec.valueToPosition(snap.value))
@@ -135,7 +143,7 @@ export function applySnap(spec: RulerSpec, positionPx: number, thresholdPx = SNA
 }
 
 /** The snap point the value sits on, for labels and value text. */
-export function snapAt(spec: RulerSpec, value: number): SnapPoint | null {
+export function snapAt<L extends string>(spec: RulerSpec<L>, value: number): SnapPoint<L> | null {
   return applySnap(spec, spec.valueToPosition(value), 0.5)
 }
 
@@ -144,7 +152,7 @@ export function snapAt(spec: RulerSpec, value: number): SnapPoint | null {
  *  Size steps by about 2 % of the current altitude in round values of the
  *  semi-major axis the heading shows (10 km near the space station, 500 km
  *  near GPS). */
-export function buttonStep(spec: RulerSpec, value: number): number {
+export function buttonStep<L extends string>(spec: RulerSpec<L>, value: number): number {
   switch (spec.parameter) {
     case 'size': {
       const target = Math.max(1, value - EARTH_RADIUS_KM) * 0.02
@@ -160,13 +168,14 @@ export function buttonStep(spec: RulerSpec, value: number): number {
 
 /** `count` button steps from `value`, onto the button grid. A labelled snap point passed on the way stops the step there, so
  *  − and + find Polar or Geostationary as a drag does. */
-export function stepBy(spec: RulerSpec, value: number, direction: -1 | 1, count = 1): number {
+export function stepBy<L extends string>(spec: RulerSpec<L>, value: number, direction: -1 | 1, count = 1): number {
+  const offset = spec.offset ?? 0
   let current = normalizeRulerValue(spec, value)
   for (let index = 0; index < count; index += 1) {
     const step = buttonStep(spec, current)
-    const onGrid = current / step
+    const onGrid = (current - offset) / step
     const nextIndex = direction > 0 ? Math.floor(onGrid + 1e-9) + 1 : Math.ceil(onGrid - 1e-9) - 1
-    let next = normalizeRulerValue(spec, stepRulerValue(spec, nextIndex * step))
+    let next = normalizeRulerValue(spec, stepRulerValue(spec, offset + nextIndex * step))
     if (!spec.wraps) {
       const passed = spec.snaps.filter((snap) => snap.label && (direction > 0 ? snap.value > current + 1e-9 && snap.value < next - 1e-9 : snap.value < current - 1e-9 && snap.value > next + 1e-9))
       if (passed.length > 0) next = passed.reduce((best, snap) => (direction > 0 ? snap.value < best.value : snap.value > best.value) ? snap : best).value
@@ -179,7 +188,7 @@ export function stepBy(spec: RulerSpec, value: number, direction: -1 | 1, count 
 
 /** The value a drag reaches: the scale moved by `dxPx` under the needle from
  *  where the drag started, held on a snap point within the threshold. */
-export function dragValue(spec: RulerSpec, startValue: number, dxPx: number, thresholdPx = SNAP_THRESHOLD_PX): { readonly value: number; readonly snap: SnapPoint | null } {
+export function dragValue<L extends string>(spec: RulerSpec<L>, startValue: number, dxPx: number, thresholdPx = SNAP_THRESHOLD_PX): { readonly value: number; readonly snap: SnapPoint<L> | null } {
   const position = spec.valueToPosition(normalizeRulerValue(spec, startValue)) - dxPx
   const snap = applySnap(spec, position, thresholdPx)
   if (snap) return { value: normalizeRulerValue(spec, snap.value), snap }

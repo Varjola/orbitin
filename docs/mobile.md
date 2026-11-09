@@ -17,18 +17,24 @@ and whether the 2D map is showing. Open panels, menus and dialogs close.
 
 ## Layout
 
-- **Top bar**, over the scene: the Orbitin mark, the mode switch (**Orbit
-  Lab** and **Real Objects**; in Finnish *Radat* and *Satelliitit*) and the
-  menu button.
+- **Top bar**, over the scene: the Orbitin mark, a button showing the current
+  mode, and the menu button. The mode button opens a panel listing **Orbit
+  Lab**, **Interception**, **Routes** (the Route Planner) and **Real Objects** (in
+  Finnish *Radat*, *Hakeutuminen*, *Reitit* and *Satelliitit*), each with a line
+  saying what it is for.
 - **View tools** at the top right (the left edge in landscape): **2D/3D**,
-  **Layers** and **Fit**.
+  **Layers** and **Fit**. Interception has its own set; see below.
 - **Object chip** above the dock: the number of objects (opens the objects
   list), the selected object's name and altitude (opens its card), and ✕ to
   clear the selection. Swipe the chip sideways to step through the scene.
 - **Dock** along the bottom: play or pause, the playback speed (tap to cycle
   1×, 1 min/s, 10 min/s and 1 h/s), the UTC time (tap for the time panel), and
-  the mode's actions: **＋** and **Edit** in Orbit Lab, **Add** in Real
-  Objects.
+  the mode's actions: **＋** and **Edit** in Orbit Lab, **Game** in Interception,
+  **Edit** and **Plan** in Routes, **Add** in Real Objects.
+- **Landscape** works in Orbit Lab only. Held sideways, the other modes are
+  covered by a note asking for the phone upright, with a button that opens
+  Orbit Lab: their controls leave too little room for the view. A web page
+  cannot lock the orientation itself outside full screen.
 - **Panels** open above the dock in portrait and as a column at the right in
   landscape, one at a time. Short panels (the Shape strip, the object card,
   time, layers) move Earth so it stays centred in the space that remains
@@ -109,12 +115,81 @@ shown but disabled. After loading:
 
 Only the records of the objects actually added are fetched.
 
+## Interception: the thruster bar
+
+In Interception the game opens in the orbital plane altitude view (see
+[`modes-and-scenes.md`](./modes-and-scenes.md#interception)): drag to pan, pinch
+to zoom; a plain tap still hides and shows the controls. The view tools stay on
+the right in both orientations and hold what the game needs: **2D/3D** switches
+between it and the 3D view, **Recentre** fits the view again (in 3D also turning
+it face-on to the game's plane, as on desktop), and the round **i** button at
+the bottom opens a short note on the Hohmann transfer. Under it the tank is an
+upright gauge. The goals (the distance to the target, and whether the shape and
+period match) are plain text at the top left, one per line, where desktop has
+the "not to scale" note, and a tap on them opens the game panel. Above the dock
+are two large hold-to-burn buttons, **Slow down** and **Speed up**, with the
+**Aid** switch between them, which marks your apogee and perigee. A burn runs
+only while a finger is down, even if it slides off the button: lifting it, a
+cancelled touch or leaving the page ends it. While a burn is held the clock runs
+at 1× and the dock's play and speed controls wait for the release.
+
+The dock's **Game** button opens the same panel: **New game** and **Restart** at
+the top, then the goal, the tank, where the target is, both orbits, the burn log
+and the model notes. A won or lost game opens it by itself. The bar steps aside
+while any panel is open. The speed pill steps 1 min/s, 2 min/s and 10 min/s,
+never 1×. The time label opens a speed slider in place of the date, Now, Reset
+and Reverse. The menu's **Share link** shares only a link to the mode's
+starting view.
+
+## Routes: planning a route
+
+The Route Planner on a phone keeps the desktop's loop, one panel at a time: set
+up the two satellites, **Plan**, choose a route, watch it, **Exit**.
+
+- **The scene** opens on the same two satellites as the desktop, with a key at
+  the top left, plain text one per line, naming the interceptor and the target,
+  and one line above the dock saying where the target is, how much higher and
+  how far apart the planes are. The dock's play and speed run the scene; its
+  time reads as on the desktop and opens nothing. The view tools are **Fit**,
+  **View** (Free, Face-on, Along where the planes cross, Follow, and Turn to
+  each burn), **Planes** and the info button, which opens **Δv budgets**: what
+  real satellites carry for their whole life.
+- **Edit** (the pencil, or a tap on the line) opens a strip over both orbits:
+  **Interceptor** or **Target**, **Swap**, and the list button for **Choose**; the
+  chips **Height**, **Tilt**, **Node** and **Ahead** (where the target is) set one
+  value on the Shape strip's ruler. The ruler settles on the other satellite's
+  height, tilt and node, reads **Same plane** where the two planes become one, and
+  on the space station, GPS and geostationary heights, polar, equatorial and
+  Sun-synchronous tilts, and together or opposite. Orbits are circular on a
+  phone: changing the height of an eccentric catalogue satellite makes it
+  circular, and the strip says so.
+- **Choose** holds the nine examples, which set both satellites, and **Real
+  satellites**: **Load the satellite list**, then one search; a result takes the
+  place of the satellite chosen in Edit.
+- **Plan** pauses the scene and opens a sheet: the routes found as a chart, cost
+  against arrival time, over a list from the fastest to the cheapest, filling as
+  the search goes. A mark lights its row; a row opens the route's details, with
+  the height and the angle between the planes over its timeline, each burn in
+  words, the fuel and what it costs beside changing height alone. **Play this
+  route** plays it; closing the sheet lets the scene run on.
+- **Playback** puts a bar in the dock's place: previous burn, play, next burn,
+  the time and rate, **Route** for the details and **Exit playback** (the square),
+  over the height and angle profile and the timeline, which can be dragged. Panels
+  open above the bar. A caption above it says the burn held, or the next, in words,
+  and opens the details at that burn; it steps aside while a panel is open. Only
+  the thrust arrow is labelled in the scene. Exit first asks **Exit playback?**,
+  with **Keep watching**, since the square sits beside Route; Back exits at once.
+  Either returns to the scene as it was when the route was planned.
+
 ## Undo instead of confirmation
 
 Adding objects, creating an orbit, removing one object and **Remove all** take
 effect at once and show a short notice with **Undo**. Undo restores the scene
 and selection exactly as they were, as long as nothing else has changed that
-scene since. The desktop presentation asks for confirmation instead.
+scene since. The desktop presentation asks for confirmation instead. A phone
+asks first only in two places: the Interception panel's **New game** and
+**Restart** once a burn has been made in an unfinished game, and the Route
+Planner's Exit playback, whose button sits next to Route.
 
 ## Object card and objects list
 
@@ -146,7 +221,8 @@ logged or sent anywhere, and it is forgotten on reload or when switched off.
 
 The menu has **Share scene** (the phone's own share sheet where available,
 otherwise the link is copied; a scene too large for a link offers **Download
-scene file**), **Language · Kieli**, **Examples** (ready-made scenes that open
+scene file**; in Interception and Routes it is **Share link**, a link to the
+mode's starting view, and a line under it says so), **Language · Kieli**, **Examples** (ready-made scenes that open
 like a shared link), **How to use** and **About Orbitin**.
 Scenes, links and files are the same on both presentations: a link made on a
 phone opens the same scene on a desktop, and settings the phone cannot change
@@ -160,8 +236,12 @@ comparison and working selection), Quick Search details and View all, manual
 TLE and OMM input, multi-selection and bulk editing, colour, rename, marker
 size and marker scaling, sensor footprints and their parameters, ground-track
 history recording, plane-drift readouts and detailed SGP4 fields, the sub-solar point, the speed
-slider, and opening a scene file. Orbitin says in About that it has more tools
-on a larger screen.
+slider, and opening a scene file. In the Route Planner the time and fuel limits,
+the engine (the phone plans at 300 s Isp unless it was changed on a larger
+screen in the same visit), eccentric orbits, each burn's
+components in numbers, playback in reverse, Manual speed and the speed multiples
+are desktop only. Orbitin says in About that it has more tools on a larger
+screen.
 
 ## Platform notes
 

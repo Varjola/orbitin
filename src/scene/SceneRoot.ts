@@ -245,11 +245,28 @@ export class SceneRoot {
     if (durationMs <= 0) this.advanceCameraAnimation(nowMs)
   }
 
+  /** A turn started by `focusDirection` is still under way. */
+  get turning(): boolean { return this.cameraAnimation !== null }
+
+  /** Places the camera along `towards` at its current distance, at once: for a view
+   *  that keeps following something. */
+  lookFrom(towards: { readonly x: number; readonly y: number; readonly z: number }): void {
+    if (towards.x === 0 && towards.y === 0 && towards.z === 0) return
+    const distance = this.cameraDistance
+    this.controls.target.set(0, 0, 0)
+    this.camera.position.set(towards.x, towards.y, towards.z).setLength(distance)
+    this.camera.lookAt(0, 0, 0)
+  }
+
   private advanceCameraAnimation(nowMs: number): void {
     const animation = this.cameraAnimation
     if (!animation) return
     const t = animation.durationMs <= 0 ? 1 : Math.min(1, Math.max(0, (nowMs - animation.startMs) / animation.durationMs))
+    // The turn sets only the direction: a fit easing the distance at the same
+    // time keeps its own.
+    const distance = this.camera.position.length()
     focusCameraPosition(animation.from, animation.towards, t, this.camera.position)
+    if (distance > 0) this.camera.position.setLength(distance)
     this.camera.lookAt(0, 0, 0)
     if (t >= 1) this.cameraAnimation = null
   }

@@ -1,9 +1,13 @@
+import type { LinkedMode } from '../data/modeLink.ts'
 import type { UiCallbacks } from './uiTypes.ts'
 import { text } from '../i18n/index.ts'
 import { html } from './markup.ts'
 import { linkUnavailableReason, shareDialogModel } from './sceneSharingWording.ts'
 
-type ShareCallbacks = Pick<UiCallbacks, 'onShareSceneRequested' | 'onCopySceneLink' | 'onSceneFileRequested'>
+type ShareCallbacks = Pick<UiCallbacks, 'onShareSceneRequested' | 'onCopySceneLink' | 'onSceneFileRequested' | 'onModeLinkRequested'>
+
+/** What Share offers: the scene, a link to a mode's starting view, or nothing yet. */
+export type ShareTarget = 'scene' | LinkedMode | null
 
 export function shareSceneMarkup(): string {
   const t = text().sharing
@@ -31,7 +35,9 @@ export function shareSceneMarkup(): string {
 }
 
 /** The Share button left of Options and the Share
- *  scene dialog. Every action encodes the scene when it is pressed. */
+ *  scene dialog. Every action encodes the scene when it is pressed. In
+ *  Interception and the Route Planner the dialog offers only a link to the
+ *  mode's starting view, and says so. */
 export class ShareSceneView {
   private readonly callbacks: ShareCallbacks
   private readonly trigger: HTMLButtonElement
@@ -43,6 +49,7 @@ export class ShareSceneView {
   private readonly status: HTMLElement
   private readonly elements: Element[]
   private opening = false
+  private target: ShareTarget = 'scene'
 
   constructor(container: HTMLElement, callbacks: ShareCallbacks) {
     this.callbacks = callbacks
@@ -76,8 +83,24 @@ export class ShareSceneView {
   /** Share stays unavailable while a shared scene is opening. */
   setOpening(opening: boolean): void {
     this.opening = opening
-    this.trigger.disabled = opening
-    if (opening && this.dialog.open) this.dialog.close()
+    this.applyAvailability()
+  }
+
+  /** A mode with a scene shares it; Interception and the Route Planner share a
+   *  link to their starting view. */
+  setTarget(target: ShareTarget): void {
+    if (target !== this.target && this.dialog.open) this.dialog.close()
+    this.target = target
+    this.applyAvailability()
+  }
+
+  private applyAvailability(): void {
+    this.trigger.disabled = this.opening || this.target === null
+    this.trigger.hidden = this.target === null
+    const label = this.target === 'scene' || this.target === null ? text().sharing.shareScene : text().sharing.shareLink
+    this.trigger.setAttribute('aria-label', label)
+    this.trigger.title = label
+    if (this.trigger.disabled && this.dialog.open) this.dialog.close()
   }
 
   dispose(): void {
@@ -86,16 +109,28 @@ export class ShareSceneView {
   }
 
   private open(): void {
-    if (this.opening || this.dialog.open) return
-    const request = this.callbacks.onShareSceneRequested()
-    const model = shareDialogModel(request, request.link)
-    this.find('share-scene-summary').textContent = model.summary
-    this.find('share-scene-time').textContent = model.timeNote
+    if (this.opening || this.dialog.open || this.target === null) return
+    const t = text().sharing
+    const sceneDialog = this.target === 'scene'
+    this.find('share-scene-title').textContent = sceneDialog ? t.title : t.shareLink
+    this.find('share-scene-time').hidden = !sceneDialog
+    this.find('share-scene-privacy').hidden = !sceneDialog
+    this.find('share-download-file').hidden = !sceneDialog
     const catalogue = this.find('share-scene-catalogue')
-    catalogue.hidden = model.catalogueNote === null
-    catalogue.textContent = model.catalogueNote ?? ''
-    this.find('share-scene-privacy').textContent = model.privacyNote
-    this.setLinkUnavailable(model.linkUnavailable)
+    if (this.target === 'scene') {
+      const request = this.callbacks.onShareSceneRequested()
+      const model = shareDialogModel(request, request.link)
+      this.find('share-scene-summary').textContent = model.summary
+      this.find('share-scene-time').textContent = model.timeNote
+      catalogue.hidden = model.catalogueNote === null
+      catalogue.textContent = model.catalogueNote ?? ''
+      this.find('share-scene-privacy').textContent = model.privacyNote
+      this.setLinkUnavailable(model.linkUnavailable)
+    } else {
+      this.find('share-scene-summary').textContent = t.modeLinkNote[this.target]
+      catalogue.hidden = true
+      this.setLinkUnavailable(null)
+    }
     this.fallback.hidden = true
     this.field.value = ''
     this.status.textContent = ''
@@ -116,7 +151,8 @@ export class ShareSceneView {
 
   private async copyLink(): Promise<void> {
     this.status.textContent = ''
-    const link = await this.callbacks.onCopySceneLink()
+    const target = this.target
+    const link = target === 'scene' || target === null ? await this.callbacks.onCopySceneLink() : { ok: true as const, url: this.callbacks.onModeLinkRequested(target) }
     if (!this.dialog.open) return
     if (!link.ok) {
       this.setLinkUnavailable(linkUnavailableReason(link.reason))

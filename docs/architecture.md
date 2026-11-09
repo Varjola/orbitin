@@ -12,7 +12,8 @@ flowchart TB
   main["main.ts<br/>entry point"] --> app
   subgraph app["app/: composition and orchestration"]
     Application["Application<br/>one clock, one render loop"]
-    Controllers["Catalogue, sharing, locale,<br/>presentation controllers"]
+    Controllers["Catalogue, sharing, locale, presentation,<br/>Interception and Route Planner controllers"]
+    Search["Route search<br/>in a browser Web Worker"]
   end
   app --> ui["ui/: desktop views"]
   app --> mobile["mobile/: phone views"]
@@ -24,8 +25,8 @@ flowchart TB
   mobile --> state
   scene --> simulation
   map --> simulation
-  state --> simulation["simulation/: objects, propagation,<br/>environment, ground tracks, sensors"]
-  simulation --> orbital["orbital/: orbital mechanics,<br/>SGP4 adapter"]
+  state --> simulation["simulation/: objects, propagation,<br/>environment, ground tracks, sensors,<br/>the Interception game, route search"]
+  simulation --> orbital["orbital/: orbital mechanics,<br/>Lambert arcs, burns, SGP4 adapter"]
   orbital --> core["core/: vectors, frames, time,<br/>constants"]
   ui -.-> i18n["i18n/: English and Finnish<br/>message catalogues"]
   mobile -.-> i18n
@@ -54,8 +55,11 @@ the import graph:
 The interface is built around four ideas, in this order:
 
 1. **Mode.** *Orbit Lab* holds editable conceptual orbits; *Real Objects*
-   holds catalogue objects and pasted TLE or OMM records. Each mode keeps its
-   own scene while the page is open.
+   holds catalogue objects and pasted TLE or OMM records. These two scene
+   modes (`SceneMode` in `state/AppState.ts`) each keep their own scene while
+   the page is open. *Interception* holds a game and the *Route Planner* two
+   satellites and their routes instead; both last for the session and have
+   no scene to share.
 2. **Catalogue.** The published satellite catalogue is loaded only when the
    learner asks for it, never automatically.
 3. **Scene.** Up to 100 objects per mode, each with its display layers
@@ -81,6 +85,20 @@ A single `SimulationClock` advances once per animation frame. Each frame:
 
 Readouts in the interface come from the same frame's sample and are stored
 nowhere.
+
+Interception and the Route Planner draw their own satellites from the same
+clock. During route playback the clock is paused, and the route's instant is
+set on it each frame; when playback runs so fast that an orbit passes in under
+a second, Earth's rotation is held.
+
+### Route search
+
+The Route Planner's search is the application's only second thread. It runs
+in a browser Web Worker (`app/routeSolver.worker.ts`, driven by
+`app/routeSolverSession.ts`) over the pure search in `simulation/route/`. The
+search works in short slices, so it reports progress, offers the routes found
+so far and stops on Cancel. It is deterministic: the same request always gives
+the same routes. See [route-planner-model.md](./route-planner-model.md).
 
 ### Presentations
 
@@ -149,10 +167,10 @@ Details: [catalogue-and-omm.md](./catalogue-and-omm.md) and
 
 | Path | Contents |
 | --- | --- |
-| `src/app/` | Composition root (`Application.ts`), controllers, the render loop, anonymous usage events |
+| `src/app/` | Composition root (`Application.ts`), controllers, the render loop, the route search Worker, anonymous usage events |
 | `src/core/` | Vectors, matrices, reference frames, time, constants |
-| `src/orbital/` | Keplerian geometry, element conditioning, the satellite.js SGP4 adapter |
-| `src/simulation/` | Orbital objects, propagation models, environment, ground tracks, sensor geometry |
+| `src/orbital/` | Keplerian geometry, element conditioning, Lambert arcs, burn frames, the satellite.js SGP4 adapter |
+| `src/simulation/` | Orbital objects, propagation models, environment, ground tracks, sensor geometry, the Interception game; `route/` holds the route model, the four kinds of route, the search and the playback timeline |
 | `src/state/` | Application state and its pure actions |
 | `src/data/` | Catalogue schema and client, search, official groups, scene documents, links and files, TLE and OMM parsing |
 | `src/scene/` | three.js views: Earth, atmosphere, Sun, orbit paths, markers, picking |

@@ -120,7 +120,7 @@ it('stays atomic when the scene changes while the selected records load', async 
   expect(h.commits).toHaveLength(0)
   expect(h.state().realObjects.scene.objects.every((object) => object.id.startsWith('placeholder-'))).toBe(true)
 
-  // An unrelated change that keeps the plan valid commits the whole set once on the latest scene.
+  // An unrelated change that keeps the addition plan valid commits the whole set once on the latest scene.
   h.replace(sceneWithPlaceholders(1))
   h.counted.gate(path)
   const rebased = addCatalogueRecordsToScene(h.deps, ['900001', '900002'])

@@ -3,7 +3,12 @@
 Orbitin can hand the scene of the current mode to someone else, or keep it
 for later, without accounts or server storage. **Share** in the top bar shares
 the **active mode's scene only**: an Orbit Lab share never contains the Real
-Objects scene, and the other way round.
+Objects scene, and the other way round. Interception and the Route Planner have
+no scene, so a game or a route setup cannot be shared. In those modes Share
+offers only a link to the mode's starting view, `#mode=interception` or
+`#mode=route-planner`, and the dialog says so. The page reads the `mode` key
+once it is ready, removes it from the address and opens the mode; a link with a
+`scene` key opens the scene and ignores `mode`.
 
 ## What is shared
 
