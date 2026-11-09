@@ -1,4 +1,5 @@
 import type { ProductMode } from '../state/AppState.ts'
+import type { RouteEditParameter, RouteSide } from './routeRulerModel.ts'
 
 /** The phone presentation's own shell state. Owned by
  *  `MobileUiRoot`, never serialized and not part of `AppState`. It survives a
@@ -6,7 +7,8 @@ import type { ProductMode } from '../state/AppState.ts'
 
 export type MobileSurface =
   | 'none' | 'shape' | 'newOrbit' | 'add' | 'object' | 'objects'
-  | 'time' | 'layers' | 'menu' | 'about' | 'help' | 'examples'
+  | 'time' | 'layers' | 'menu' | 'about' | 'help' | 'examples' | 'maneuvers' | 'hohmann' | 'routeBudgets' | 'modes'
+  | 'routeEdit' | 'routeChoose' | 'routeView' | 'routePlan' | 'routeDetails' | 'routeExit'
 
 export type ShapeParameter =
   | 'size' | 'shape' | 'tilt' | 'node' | 'periapsis' | 'position' | 'drift'
@@ -18,6 +20,9 @@ export interface MobileShellState {
   /** Only the object card has two heights; every other panel has one. */
   readonly expanded: boolean
   readonly shapeParameter: ShapeParameter
+  /** The Route Planner's Edit panel: which object, and which value. */
+  readonly routeSide: RouteSide
+  readonly routeParameter: RouteEditParameter
   readonly immersive: boolean
   /** The panel to restore when immersive mode ends. */
   readonly surfaceBeforeImmersive: MobileSurface
@@ -32,7 +37,7 @@ export interface MobileSceneFacts {
   readonly hasSelection: boolean
 }
 
-const COMPACT: ReadonlySet<MobileSurface> = new Set(['shape', 'time', 'layers'])
+const COMPACT: ReadonlySet<MobileSurface> = new Set(['shape', 'time', 'layers', 'routeEdit', 'routeView', 'routeExit'])
 
 /** Compact panels count for framing; expanded ones overlay the scene. */
 export function isCompactSurface(state: MobileShellState): boolean {
@@ -44,12 +49,15 @@ export function isExpandedSurface(state: MobileShellState): boolean {
 }
 
 /** The first chip is Tilt, because it makes the most visible change. */
-export const INITIAL_MOBILE_SHELL: MobileShellState = { surface: 'none', expanded: false, shapeParameter: 'tilt', immersive: false, surfaceBeforeImmersive: 'none' }
+export const INITIAL_MOBILE_SHELL: MobileShellState = { surface: 'none', expanded: false, shapeParameter: 'tilt', routeSide: 'own', routeParameter: 'height', immersive: false, surfaceBeforeImmersive: 'none' }
 
 /** The panel a mode opens with. */
 export function entrySurface(facts: MobileSceneFacts): MobileSurface {
-  if (facts.mode === 'orbitLab') return facts.hasKeplerianSelection || facts.sceneEmpty ? 'shape' : 'none'
-  return facts.sceneEmpty ? 'add' : 'none'
+  switch (facts.mode) {
+    case 'orbitLab': return facts.hasKeplerianSelection || facts.sceneEmpty ? 'shape' : 'none'
+    case 'maneuvers': case 'routePlanner': return 'none'
+    case 'realObjects': return facts.sceneEmpty ? 'add' : 'none'
+  }
 }
 
 /** The state on the first view of a new mobile root. The page opens on the
@@ -84,6 +92,15 @@ export function toggleImmersive(state: MobileShellState): MobileShellState {
   return { ...state, immersive: true, surfaceBeforeImmersive: state.surface, surface: 'none', expanded: false }
 }
 
+export function setRouteSide(state: MobileShellState, routeSide: RouteSide): MobileShellState {
+  return state.routeSide === routeSide ? state : { ...state, routeSide }
+}
+
+/** Ahead belongs to the pair, so it stays whichever object is chosen. */
+export function setRouteParameter(state: MobileShellState, routeParameter: RouteEditParameter): MobileShellState {
+  return state.routeParameter === routeParameter ? state : { ...state, routeParameter }
+}
+
 export function setShapeParameter(state: MobileShellState, shapeParameter: ShapeParameter): MobileShellState {
   return state.shapeParameter === shapeParameter ? state : { ...state, shapeParameter }
 }
@@ -97,7 +114,7 @@ export function setExpanded(state: MobileShellState, expanded: boolean): MobileS
 /** An empty tap closes an open expanded panel or the Shape strip (which has
  *  no close button of its own); otherwise it toggles immersive mode. */
 export function afterEmptyTap(state: MobileShellState): MobileShellState {
-  return isExpandedSurface(state) || state.surface === 'shape' ? closeSurface(state) : toggleImmersive(state)
+  return isExpandedSurface(state) || state.surface === 'shape' || state.surface === 'routeEdit' ? closeSurface(state) : toggleImmersive(state)
 }
 
 /** A mode switch opens the mode's entry panel and ends immersive mode. */

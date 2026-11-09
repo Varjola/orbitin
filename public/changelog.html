@@ -19,6 +19,9 @@
       .lead { margin-bottom: 28px; }
       section { padding: 18px 0; border-top: 1px solid rgba(145, 180, 216, 0.18); }
       section p { margin-top: 6px; }
+      ul { margin: 6px 0 0; padding-left: 1.25rem; color: #b9c9da; }
+      li + li { margin-top: 4px; }
+      strong { color: #edf4ff; font-weight: 600; }
       footer { margin-top: 28px; padding-top: 18px; border-top: 1px solid rgba(145, 180, 216, 0.18); font-size: 0.9rem; }
     </style>
   </head>
@@ -27,6 +30,15 @@
     <main>
       <h1>Changelog</h1>
       <p class="lead">Changes in each version, newest first. A <a href="https://github.com/Varjola/orbitin/blob/main/CHANGELOG.md">detailed changelog</a> is on GitHub.</p>
+      <section>
+        <h2>Version 1.1.0</h2>
+        <ul>
+          <li><strong>Interception mode added:</strong> a game about changing orbits. Burn forwards or backwards to reach a target orbit before your propellant runs out.</li>
+          <li><strong>Route Planner mode added:</strong> plan routes between two satellites and compare what each costs in Δv against how long it takes.</li>
+          <li><strong>Mode list:</strong> the top bar shows the current mode and opens a list of all modes and what each is for.</li>
+          <li>Minor bug fixes and adjustments.</li>
+        </ul>
+      </section>
       <section>
         <h2>Version 1.0.1</h2>
         <p>On desktop, Edit orbit is open when the page loads.</p>

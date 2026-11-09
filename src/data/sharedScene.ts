@@ -1,10 +1,10 @@
 import { decodeSceneDocument, encodeSceneDocument, type KeplerianObjectV1, type RealObjectV1, type SceneDocumentDecodeResult, type SceneDocumentV1 } from './sceneDocument.ts'
-import type { AppState, ProductMode } from '../state/AppState.ts'
+import type { AppState, SceneMode } from '../state/AppState.ts'
 
 /** The sharing profile, a set of rules over scene
  *  document version 1. A shared scene carries one mode's scene, no simulation
  *  block and normalized ids. Links and files both hold shared scenes. */
-export interface SharedSceneSummary { readonly mode: ProductMode; readonly objectCount: number; readonly manualObjectCount: number; readonly catalogueObjectCount: number }
+export interface SharedSceneSummary { readonly mode: SceneMode; readonly objectCount: number; readonly manualObjectCount: number; readonly catalogueObjectCount: number }
 
 const EMPTY_SHARED_SCENE = { objects: [], selectedIds: [], primaryId: null } as const
 

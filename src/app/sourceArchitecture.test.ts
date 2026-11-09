@@ -224,8 +224,8 @@ it('keeps the recovered shell free of the legacy panel composition', () => {
     expect(`${ui}\n${css}`, `legacy UI token ${token}`).not.toContain(token)
   }
   expect(sources['../ui/AppShellView.ts']).toContain('class="brand-lockup"')
-  // The shell syncs only its mode buttons; rows and swatches own their state.
-  expect(sources['../ui/AppShellView.ts']).toContain(`querySelectorAll<HTMLButtonElement>('.mode-selector [aria-pressed]')`)
+  // The shell syncs only its mode control; rows and swatches own their state.
+  expect(sources['../ui/AppShellView.ts']).toContain('this.modeSwitcher.sync(model.mode)')
   expect(sources['../ui/AppShellView.ts']).not.toContain(`querySelectorAll<HTMLButtonElement>('[aria-pressed]')`)
   expect(sources['../ui/UiRoot.ts']).not.toContain('innerHTML')
   expect(sources['../ui/UiRoot.ts']).toContain('new AppShellView')

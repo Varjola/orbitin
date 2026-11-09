@@ -153,6 +153,19 @@ it('runs Quick Search against the loaded index without inheriting full-query fil
   expect(calls.filter((call) => call.method === 'renderQuickSearch').at(-1)?.args[0]).toEqual(result)
 })
 
+it('searches for another tool without touching Quick Search', async () => {
+  const { controller, calls } = await harness()
+  expect(controller.searchEntries('synthetic').entries).toEqual([])
+  await controller.load()
+  controller.quickSearch('900002')
+  const rendered = calls.filter((call) => call.method === 'renderQuickSearch').length
+  const result = controller.searchEntries('synthetic', 2)
+  expect(result.entries.map((entry) => entry.catalogId)).toEqual(['900001', '900002'])
+  expect(result.hasMore).toBe(true)
+  expect(controller.workspace.quickSearchText).toBe('900002')
+  expect(calls.filter((call) => call.method === 'renderQuickSearch')).toHaveLength(rendered)
+})
+
 it('resolves a Discovery Page once from index data and scopes the full query', async () => {
   const { controller, calls } = await harness()
   await controller.load()

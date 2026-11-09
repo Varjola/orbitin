@@ -21,6 +21,7 @@ describe('formats every kind of value per language', () => {
     ['percentage', (f: typeof en) => f.percent(0.125, 1), '12.5%', `12,5${NBSP}%`],
     ['long duration', (f: typeof en) => f.duration(5760), '1h 36m', `1${NBSP}h 36${NBSP}min`],
     ['short duration', (f: typeof en) => f.duration(312), '5m 12s', `5${NBSP}min 12${NBSP}s`],
+    ['whole minutes', (f: typeof en) => f.minutes(10), '10m', `10${NBSP}min`],
     ['speed multiplier', (f: typeof en) => f.speedMultiplier(60), '60×', '60×'],
     ['latitude', (f: typeof en) => f.latitude(12.3 * DEG, 1), '12.3°N', `12,3°${NBSP}P`],
     ['longitude', (f: typeof en) => f.longitude(45.6 * DEG, 1), '45.6°E', `45,6°${NBSP}I`],

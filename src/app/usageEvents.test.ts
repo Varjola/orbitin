@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { USAGE_EVENT_RULES, validateUsageEvent } from '../../workers/frontend/usageEventSchema.ts'
-import { httpStatusClass, loadTimeBucket, MAX_QUEUED_EVENTS, objectCountBucket, privacySignalSet, resultCountBucket, UsageEventQueue, usageEvents, type UsageEvent } from './usageEvents.ts'
+import { burnCountBucket, efficiencyBucket, httpStatusClass, loadTimeBucket, MAX_QUEUED_EVENTS, objectCountBucket, privacySignalSet, resultCountBucket, routeDeltaVBucket, routeDurationBucket, UsageEventQueue, usageEvents, type UsageEvent } from './usageEvents.ts'
 
 /** One example of every event the application records, with every value of
  *  each enumerated property, so the client and the Worker allowlist cannot drift. */
@@ -8,7 +8,11 @@ const EXAMPLES: readonly UsageEvent[] = [
   { type: 'visit', presentation: 'desktop', locale: 'en', entry: 'plain' },
   { type: 'visit', presentation: 'mobile', locale: 'fi', entry: 'scene-link' },
   { type: 'visit', presentation: 'mobile', locale: 'en', entry: 'example' },
-  { type: 'mode', mode: 'orbitLab' }, { type: 'mode', mode: 'realObjects' },
+  { type: 'mode', mode: 'orbitLab' }, { type: 'mode', mode: 'maneuvers' }, { type: 'mode', mode: 'routePlanner' }, { type: 'mode', mode: 'realObjects' },
+  ...[0.05, 0.2, 0.7, 2, 4, 7].map((kmPerSecond) => ({ type: 'route_planned', limits: 'none', family: 'direct', deltaV: routeDeltaVBucket(kmPerSecond), duration: 'under-6h', sources: 'example' }) as const),
+  ...[3600, 40_000, 200_000, 1_000_000, 5_000_000].map((seconds) => ({ type: 'route_planned', limits: 'fuel', family: 'direct', deltaV: 'under-100', duration: routeDurationBucket(seconds), sources: 'example' }) as const),
+  ...(['catalogue', 'mixed'] as const).map((sources) => ({ type: 'route_planned', limits: 'time', family: 'direct', deltaV: 'under-100', duration: 'under-6h', sources }) as const),
+  ...(['turnAtNode', 'goHigh', 'drift'] as const).map((family) => ({ type: 'route_planned', limits: 'both', family, deltaV: 'over-6000', duration: '1-7d', sources: 'example' }) as const),
   ...(['leo', 'meo', 'geo', 'heo', 'polar', 'elliptical', 'sso', 'custom'] as const).map((preset) => ({ type: 'orbit_created', preset }) as const),
   ...[0, 1500, 5000, 20_000].map((ms) => ({ type: 'catalogue_loaded', time: loadTimeBucket(ms) }) as const),
   ...([undefined, 404, 503] as const).map((status) => ({ type: 'catalogue_failed', status: httpStatusClass(status) }) as const),
@@ -21,6 +25,9 @@ const EXAMPLES: readonly UsageEvent[] = [
   ...[0, 1, 5, 20, 90].map((count) => ({ type: 'share', kind: 'link', mode: 'realObjects', objects: objectCountBucket(count) }) as const),
   { type: 'share', kind: 'file', mode: 'orbitLab', objects: '1' }, { type: 'share', kind: 'native', mode: 'orbitLab', objects: '1' },
   { type: 'scene_opened', kind: 'link', mode: 'orbitLab' }, { type: 'scene_opened', kind: 'file', mode: 'realObjects' }, { type: 'scene_opened', kind: 'example', mode: 'realObjects' },
+  ...[0, 2, 4, 8, 12].map((count) => ({ type: 'maneuver_result', outcome: 'reentered', burns: burnCountBucket(count) }) as const),
+  ...[1, 1.3, 1.7, 2.5].map((ratio) => ({ type: 'maneuver_result', outcome: 'won', burns: '1-2', efficiency: efficiencyBucket(ratio) }) as const),
+  { type: 'maneuver_result', outcome: 'restarted', burns: '0' }, { type: 'maneuver_result', outcome: 'new-game', burns: '3-5' },
   { type: 'view', which: 'map-maximized' }, { type: 'view', which: 'language' },
   ...(['webgl', 'textures', 'context-lost', 'frame', 'uncaught', 'rejection'] as const).map((kind) => ({ type: 'error', kind }) as const),
 ]

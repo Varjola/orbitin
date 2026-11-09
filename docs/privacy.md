@@ -20,7 +20,8 @@ The rest of this page gives the details.
   link or sent anywhere.
 - **Scenes.** Your scenes exist only while the page is open. A shared link
   carries its scene in the fragment after `#`, which browsers never send to a
-  server; a scene file stays wherever you save it.
+  server; a scene file stays wherever you save it. A link to Interception or
+  the Route Planner names only the mode.
 - **Pasted TLE and OMM records** stay in the page and are not uploaded.
 
 ## What is counted
@@ -37,7 +38,7 @@ first minute. Every event is one of these, with only the values listed:
 | Event | When | What it contains |
 | --- | --- | --- |
 | `visit` | once per page load | desktop or phone, English or Finnish, whether a scene link or an example was opened |
-| `mode` | first entry to a mode | Orbit Lab or Real Objects |
+| `mode` | first entry to a mode | which of the four modes |
 | `orbit_created` | an orbit is created | which kind of example orbit |
 | `catalogue_loaded` / `catalogue_failed` | the satellite list loads or fails | a load-time range, or a failure class such as "network" |
 | `search` | a search leads to an add or to details | a result-count range, never the search text |
@@ -45,6 +46,8 @@ first minute. Every event is one of these, with only the values listed:
 | `group_added` | a satellite group is added | the group |
 | `example_opened` | an example is opened | the example |
 | `share` / `scene_opened` | a link or file is shared or opened | link or file, the mode and an object-count range |
+| `maneuver_result` | a Interception game is won or lost, or replaced by New game or Restart after a burn | the outcome, a burn-count range and, for a win, an efficiency range |
+| `route_planned` | a planned route is played | which limits were on, the kind of route, a Δv range, a duration range, and whether the satellites were examples, from the catalogue or both |
 | `view` | the 2D map is maximized or the language changed | which |
 | `error` | the 3D view cannot start or stops, or an unexpected error | the kind of error only |
 

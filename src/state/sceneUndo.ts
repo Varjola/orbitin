@@ -1,4 +1,4 @@
-import { sceneFor, withScene, type AppState, type ProductMode, type SceneState } from './AppState.ts'
+import { activeSceneMode, sceneFor, withScene, type AppState, type SceneMode, type SceneState } from './AppState.ts'
 
 /** One undoable scene change. Mobile
  *  offers Undo instead of confirmation for adding, creating and removing.
@@ -7,7 +7,7 @@ import { sceneFor, withScene, type AppState, type ProductMode, type SceneState }
  *  objects are restored from their stored `OrbitalObject` values, so undo
  *  never needs the network. */
 export interface SceneUndoEntry {
-  readonly mode: ProductMode
+  readonly mode: SceneMode
   readonly before: SceneState
   readonly after: SceneState
 }
@@ -15,7 +15,8 @@ export interface SceneUndoEntry {
 /** The change from `before` to `after` in `mode`'s scene (by default the
  *  active mode), or null when that scene did not change. An action names the
  *  scene it changed, since the learner may have switched modes meanwhile. */
-export function recordSceneChange(before: AppState, after: AppState, mode: ProductMode = after.activeMode): SceneUndoEntry | null {
+export function recordSceneChange(before: AppState, after: AppState, mode: SceneMode | null = activeSceneMode(after)): SceneUndoEntry | null {
+  if (!mode) return null
   const previous = sceneFor(before, mode)
   const next = sceneFor(after, mode)
   return previous === next ? null : { mode, before: previous, after: next }

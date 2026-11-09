@@ -7,7 +7,8 @@ import { decodeCatalogueManifest, decodeCatalogueShard } from '../data/catalogue
 import { sceneObjectFromCatalogueRecord } from '../app/catalogueToScene.ts'
 import type { ReadoutValues } from '../ui/uiTypes.ts'
 import { mobileTopBarMarkup } from './MobileTopBarView.ts'
-import { mobileClockDate, mobileClockTime, mobileDockMarkup, MOBILE_SPEED_CYCLE, mobileSpeedLabel, nextMobileSpeed } from './MobileDockView.ts'
+import { modesPanelMarkup } from './ModesPanelView.ts'
+import { mobileClockDate, mobileClockTime, mobileDockMarkup, MOBILE_SPEED_CYCLE, mobileSpeedCycle, mobileSpeedLabel, nextMobileSpeed } from './MobileDockView.ts'
 import { panelHostMarkup } from './PanelHost.ts'
 import { timePanelMarkup } from './TimePanelView.ts'
 import { objectChipMarkup } from './ObjectChipView.ts'
@@ -25,17 +26,26 @@ import { objectCardModel, objectRowLine } from './objectSummaryModel.ts'
 import { sceneChangeMessage } from './MobileUiRoot.ts'
 import { rulerSpec } from './shapeRulerModel.ts'
 import { BackGesture, isPanelEntry, type BackGestureWindow } from './backGesture.ts'
+import { aheadText, routeConsequence, routeEditMarkup, routeSnapText, routeValueText, separationLine } from './RouteEditPanelView.ts'
+import { routeChooseMarkup } from './RouteChooseSheetView.ts'
+import { routeViewMarkup } from './RouteViewPanelView.ts'
+import { routeKeyMarkup } from './MobileRouteSceneView.ts'
+import { routePlanMarkup, routeRowsMarkup } from './RoutePlanSheetView.ts'
+import { captionBurn, captionLines, routePlaybackBarMarkup } from './MobileRoutePlaybackBarView.ts'
+import { routeExitMarkup } from './RouteExitPanelView.ts'
+import { ROUTE_LIVE_RATES } from '../app/RoutePlannerController.ts'
 import mobileRootSource from './MobileUiRoot.ts?raw'
 import chooserSource from '../ui/SceneObjectChooserView.ts?raw'
 
 afterEach(() => setActiveLocale('en'))
 
 const MARKUP: ReadonlyArray<readonly [string, () => string]> = [
-  ['top bar', mobileTopBarMarkup], ['dock', mobileDockMarkup], ['panel', () => panelHostMarkup('m-panel-heading-1')],
+  ['top bar', () => mobileTopBarMarkup()], ['modes', modesPanelMarkup], ['dock', mobileDockMarkup], ['panel', () => panelHostMarkup('m-panel-heading-1')],
   ['time', () => timePanelMarkup({ status: 'm-a-1', faded: 'm-b-2' })], ['chip', objectChipMarkup], ['card', objectCardMarkup],
   ['list', objectsListMarkup], ['view tools', viewToolsMarkup], ['layers', layersPanelMarkup], ['menu', menuMarkup],
   ['about', aboutPanelMarkup], ['notice', noticeMarkup], ['ruler', rulerMarkup], ['shape', shapeStripMarkup],
   ['new orbit', newOrbitMarkup], ['add', addSheetMarkup],
+  ['route edit', routeEditMarkup], ['route choose', routeChooseMarkup], ['route view', routeViewMarkup], ['route key', routeKeyMarkup], ['route plan', routePlanMarkup], ['route playback', routePlaybackBarMarkup], ['route exit', routeExitMarkup],
 ]
 
 /** Every button and field in a markup string, with its accessible name source. */
@@ -58,13 +68,15 @@ describe('mobile view markup', () => {
     }
   })
 
-  it('uses the short mode names, with Finnish Radat and Satelliitit', () => {
-    expect(mobileTopBarMarkup()).toContain('>Orbit Lab</button>')
-    expect(mobileTopBarMarkup()).toContain('>Real Objects</button>')
+  it('shows the current mode in the top bar and every mode in its panel, with the short names', () => {
+    expect(mobileTopBarMarkup()).toContain('>Orbit Lab</span>')
+    expect(mobileTopBarMarkup('realObjects')).toContain('>Real Objects</span>')
+    expect(modesPanelMarkup()).toContain('>Interception</span>')
     setActiveLocale('fi')
-    expect(mobileTopBarMarkup()).toContain('>Radat</button>')
-    expect(mobileTopBarMarkup()).toContain('>Satelliitit</button>')
-    expect(mobileTopBarMarkup()).toContain('role="group" aria-label="Osio"')
+    expect(mobileTopBarMarkup()).toContain('>Radat</span>')
+    expect(mobileTopBarMarkup()).toContain('aria-label="Osio: Radat"')
+    expect(mobileTopBarMarkup()).toContain('aria-haspopup="dialog"')
+    for (const name of ['Radat', 'Hakeutuminen', 'Satelliitit']) expect(modesPanelMarkup()).toContain(`>${name}</span>`)
   })
 
   it('makes the ruler a keyboard slider with named one-step buttons', () => {
@@ -124,8 +136,15 @@ describe('mobile view markup', () => {
 describe('mobile dock time and speed', () => {
   it('cycles every existing speed step', () => {
     expect(MOBILE_SPEED_CYCLE).toEqual([1, 60, 600, 3600])
-    expect([1, 60, 600, 3600, 120].map(nextMobileSpeed)).toEqual([60, 600, 3600, 1, 1])
+    expect([1, 60, 600, 3600, 120].map((speed) => nextMobileSpeed(speed))).toEqual([60, 600, 3600, 1, 1])
     expect(mobileSpeedLabel(3600)).toBe('1 h/s')
+  })
+
+  it('cycles the Interception steps without reaching 1×', () => {
+    const cycle = mobileSpeedCycle('maneuvers')
+    expect([60, 120, 600, 1].map((speed) => nextMobileSpeed(speed, cycle))).toEqual([120, 600, 60, 60])
+    expect(mobileSpeedCycle('orbitLab')).toBe(MOBILE_SPEED_CYCLE)
+    expect(mobileSpeedLabel(120)).toBe('2 min/s')
   })
 
   it('shows hours and minutes, truncated, and the ISO date', () => {
@@ -262,6 +281,11 @@ describe('Share scene', () => {
     expect(await shareSceneLink(link, { copy: async () => { throw new Error('denied') } })).toBe('failed')
   })
 
+  it('shares the scene in a scene mode and a link to the starting view elsewhere, as desktop does', () => {
+    expect(mobileRootSource).toContain("views.menu.setTarget(isSceneMode(state.activeMode) ? 'scene' : state.activeMode)")
+    expect(mobileRootSource).toContain('this.callbacks.onModeLinkRequested(mode)')
+  })
+
   it('offers the scene file instead of a link over the link limits', async () => {
     const share = vi.fn(async () => {})
     expect(await shareSceneLink(async () => ({ ok: false as const, reason: { kind: 'too-long' } as never }), { share })).toBe('too-large')
@@ -328,6 +352,95 @@ describe('the back gesture', () => {
 describe('the back gesture and shared links', () => {
   it('writes no history entry while loading, opening a scene, or with a scene link in the address', () => {
     expect(mobileRootSource).toContain("return this.loading || this.sceneOpening || /[#&]scene=/.test(this.view?.location.hash ?? '')")
-    expect(mobileRootSource).toContain('new BackGesture(this.view, () => this.changeShell(closeSurface(this.shell)), () => this.historyBlocked())')
+    expect(mobileRootSource).toContain('new BackGesture(this.view, () => this.onBack(), () => this.historyBlocked())')
+    expect(mobileRootSource).toContain('    this.changeShell(closeSurface(this.shell))\n  }')
+  })
+})
+
+describe('the Route Planner on a phone', () => {
+  const separation = { altitudeGapKm: 19650, planeAngleRad: 3.4 * Math.PI / 180, phaseAheadRad: Math.PI / 2, nodeDriftRadPerDay: 0, lineUpSeconds: 41 * 86_400, altitudeOnlyKmPerSecond: 3.841 }
+  const values = { perigeeAltitudeKm: 550, apogeeAltitudeKm: 550, inclinationDeg: 55, raanDeg: 10, argOfPerigeeDeg: 0, argumentOfLatitudeDeg: 0 }
+  const side = (circular: boolean) => ({ label: { kind: 'example' as const, exampleId: 'lowAndMedium' as const, side: 'own' as const }, edited: false, circular, values, elementAgeSeconds: null })
+
+  it('says in one line where the target is, how much higher, and how far apart the planes are', () => {
+    expect(separationLine(separation)).toBe('90° ahead · 19,650 km higher · Planes 3.4° apart')
+    expect(separationLine({ ...separation, altitudeGapKm: 0.1, planeAngleRad: 0, phaseAheadRad: -Math.PI / 6 })).toBe('30° behind · Same height · Same plane')
+    expect(aheadText(0.001)).toBe('Together')
+    setActiveLocale('fi')
+    expect(separationLine(separation).replace(/\s/g, ' ')).toBe('90° edellä · 19 650 km ylempänä · Tasoero 3,4°')
+  })
+
+  it('gives each chip one consequence line from what the desktop panel shows', () => {
+    const model = { separation, own: side(true), target: side(true) }
+    expect(routeConsequence('height', model, 'own')).toBe('Target 19,650 km higher · height alone 3,841 m/s')
+    expect(routeConsequence('tilt', model, 'own')).toBe('Planes 3.4° apart · line up in 41 d 0 h')
+    expect(routeConsequence('ahead', model, 'target')).toBe('Target 90° ahead')
+    expect(routeConsequence('height', { ...model, own: side(false) }, 'own')).toBe('Changing its height makes the orbit circular.')
+    expect(routeConsequence('height', { ...model, separation: { ...separation, altitudeGapKm: 0.2, altitudeOnlyKmPerSecond: 0 } }, 'own')).toBe('Same height')
+    // The dock's label fits its 72 px budget in Finnish too; the full name says what it does.
+    setActiveLocale('fi')
+    expect(mobileDockMarkup()).toContain('<span>Reitti</span>')
+    expect(mobileDockMarkup()).toContain('aria-label="Pysäytä näkymä ja suunnittele reitti tästä hetkestä"')
+  })
+
+  it('names the snap points at the other object after it', () => {
+    expect(routeSnapText({ value: 0, label: 'otherHeight' }, 'own')).toBe('Target’s height')
+    expect(routeSnapText({ value: 0, label: 'otherNode' }, 'target')).toBe('Interceptor’s node')
+    expect(routeSnapText({ value: 0, label: 'samePlane' }, 'own')).toBe('Same plane')
+    expect(routeValueText('ahead', 270)).toBe('-90°')
+    setActiveLocale('fi')
+    expect(routeSnapText({ value: 0, label: 'otherHeight' }, 'own')).toBe('Kohteen korkeus')
+  })
+
+  it('lists the routes found as rows, not a table, each naming its route', () => {
+    const list = {
+      own: { kind: 'example' as const, exampleId: 'lowAndMedium' as const, side: 'own' as const }, target: { kind: 'example' as const, exampleId: 'lowAndMedium' as const, side: 'target' as const },
+      ownEdited: false, targetEdited: false, limits: { timeSeconds: null, deltaVKmPerSecond: null }, withinLimits: true, alreadyThere: false, complete: true, outOfDate: false, limitedToSeconds: null,
+      routes: [{ deltaVKmPerSecond: 6.897, arrivalSeconds: 4740, family: 'direct' as const, burns: 2 }, { deltaVKmPerSecond: 3.351, arrivalSeconds: 85 * 86_400 + 8 * 3600, family: 'drift' as const, burns: 4 }],
+    }
+    const rows = routeRowsMarkup(list)
+    expect(rows).not.toContain('<table')
+    expect(rows.match(/<li>/g)).toHaveLength(2)
+    expect(rows).toContain('aria-label="Route details: 3,351 m/s, arrives in 85 d 8 h, Natural drift"')
+    const sheet = routePlanMarkup()
+    expect(sheet).toContain('>Play this route</button>')
+    expect(sheet).toContain('‹ All routes')
+  })
+
+  it('captions the burn held, else the next one, in the details’ words, and the arrival after the last', () => {
+    const summary = { perigeeAltitudeKm: 550, apogeeAltitudeKm: 550, inclinationRad: 0 }
+    const burn = (number: number, atSeconds: number, prograde: number) => ({ number, atSeconds, purpose: 'depart' as const, sizeKmPerSecond: Math.abs(prograde), progradeKmPerSecond: prograde, normalKmPerSecond: 0, outwardKmPerSecond: 0, before: summary, after: { ...summary, apogeeAltitudeKm: 20_200 }, turnRad: 0 })
+    const shown = { burns: [burn(1, 600, 2.07), burn(2, 4000, -1.5)] }
+    expect(captionLines({ burnNumber: 1, seconds: 600 }, shown)).toEqual({ number: '1', head: 'Burn 1 of 2 · 2,070 m/s forward', line: 'Apogee 550 → 20,200 km', held: true, index: 0 })
+    expect(captionLines({ burnNumber: null, seconds: 1000 }, shown).head).toBe('Next: Burn 2 of 2 · 1,500 m/s back')
+    expect(captionLines({ burnNumber: null, seconds: 5000 }, shown)).toMatchObject({ number: '', head: 'Matched with the target', index: null })
+    expect(captionBurn({ burnNumber: null, seconds: 0 }, shown.burns)).toEqual({ index: 0, held: false })
+    setActiveLocale('fi')
+    expect(captionLines({ burnNumber: 2, seconds: 4000 }, shown).head).toContain('Moottorin käyttö 2/2')
+  })
+
+  it('names the playback bar’s controls and keeps the details one press away', () => {
+    const bar = routePlaybackBarMarkup()
+    for (const name of ['Previous burn', 'Play the route', 'Next burn', 'Route details', 'Exit playback', 'Route timeline']) expect(bar).toContain(`aria-label="${name}"`)
+    expect(bar).toContain('type="range"')
+    // The stop square beside Route asks before it exits.
+    expect(bar).toMatch(/class="m-icon-button m-route-exit" type="button" aria-haspopup="dialog"/)
+    expect(routeExitMarkup()).toContain('>Keep watching</button>')
+    expect(routeExitMarkup()).toContain('>Exit playback</button>')
+    setActiveLocale('fi')
+    expect(routeExitMarkup()).toContain('>Jatka katselua</button>')
+  })
+
+  it('runs the live scene at the desktop bar’s speeds', () => {
+    expect(mobileSpeedCycle('routePlanner')).toEqual(ROUTE_LIVE_RATES)
+  })
+
+  it('edits, swaps and chooses from the Edit strip, and keeps the catalogue behind a press', () => {
+    expect(routeEditMarkup()).toContain('aria-label="Swap the interceptor and the target"')
+    for (const chip of ['Height', 'Tilt', 'Node', 'Ahead']) expect(routeEditMarkup()).toContain(`>${chip}</button>`)
+    const choose = routeChooseMarkup()
+    expect(choose).toContain('Load the satellite list')
+    expect(choose.match(/data-try="/g)).toHaveLength(9)
+    expect(routeViewMarkup()).toContain('Turn to each burn')
   })
 })

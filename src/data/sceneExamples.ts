@@ -1,4 +1,4 @@
-import type { ProductMode } from '../state/AppState.ts'
+import type { SceneMode } from '../state/AppState.ts'
 
 /** Curated example scenes: ordinary `s1`
  *  scene links, maintained here and opened from Examples on desktop and in
@@ -11,7 +11,7 @@ import type { ProductMode } from '../state/AppState.ts'
  *  catalogue are reported like in any shared scene. */
 export interface SceneExample {
   readonly id: string
-  readonly mode: ProductMode
+  readonly mode: SceneMode
   /** The fragment of the link, without `#`: `scene=s1.<payload>`. */
   readonly fragment: string
 }

@@ -1,26 +1,33 @@
 import type { SimulationInstant } from '../core/time.ts'
 import type { GroupOrbitFacts } from '../data/groupOrbitFacts.ts'
-import type { EnvironmentState } from '../simulation/environment.ts'
 import type { ElementConstraint, EditedGeometryField, DerivedOrbitValues } from '../orbital/geometry.ts'
 import type { AngleReadout, ElementConditioning } from '../orbital/elementConditioning.ts'
-import type { AngleRates, OrbitalObject, PropagationModel } from '../simulation/OrbitalObject.ts'
+import type { AngleRates, PropagationModel } from '../simulation/OrbitalObject.ts'
 import type { OrbitSunGeometry } from '../simulation/orbitSunGeometry.ts'
 import type { SunSynchronousStatus } from '../simulation/propagationTransitions.ts'
 import type { SubSatellitePoint } from '../simulation/groundTrack.ts'
 import type { InstantaneousSensorGeometry } from '../simulation/sensorFootprint.ts'
 import type { TleDefinition } from '../data/tle.ts'
 import type { OmmDefinition } from '../data/omm.ts'
+import type { LinkedMode } from '../data/modeLink.ts'
 import type { OrbitPropagationError } from '../orbital/propagationError.ts'
 import type { SamplingBand } from '../app/samplingPresentation.ts'
-import type { AppState, EarthStyle, OrbitLabDrawerTab, ProductMode, SceneBackdrop, SceneSelection } from '../state/AppState.ts'
+import type { EarthStyle, OrbitLabDrawerTab, ProductMode, SceneBackdrop, SceneSelection } from '../state/AppState.ts'
 import type { BudgetedLayer } from '../state/sceneComplexity.ts'
 import type { CatalogueQuery } from '../data/catalogueQuery.ts'
 import type { AddCatalogueRecordsOutcome } from '../state/catalogueAdditionOutcome.ts'
 import type { SceneSelectionIntent } from './sceneSelectionIntent.ts'
 import type { SharedSceneSummary } from '../data/sharedScene.ts'
+import type { RoutePlaybackSpeed } from '../simulation/route/routePlayback.ts'
 import type { SceneLinkAvailability, SceneLinkUnavailable } from '../data/sceneLink.ts'
 import type { Locale } from '../i18n/index.ts'
 import type { OrbitPresetId } from '../simulation/orbitPresets.ts'
+import type { BurnDirection } from '../simulation/maneuverGame.ts'
+import type { ManeuverDisplay } from './maneuverPanelModel.ts'
+import type { RouteTryId } from '../simulation/route/routeSources.ts'
+import type { RouteOrbitValues } from '../simulation/route/routeObjects.ts'
+import type { RouteCameraView } from '../simulation/route/routeDrawing.ts'
+import type { RouteSide } from '../app/RoutePlannerController.ts'
 
 /** Where a layer-budget refusal is explained: beside the control that asked. */
 export type LayerBudgetSurface = 'inspector' | 'view' | 'bulk'
@@ -105,6 +112,8 @@ export interface UiCallbacks {
   /** The active mode's shared scene, summarized for the Share dialog; never touches the catalogue. */
   onShareSceneRequested: () => SharedSceneSummary & { readonly link: SceneLinkAvailability }
   onCopySceneLink: () => Promise<{ readonly ok: true; readonly url: string } | { readonly ok: false; readonly reason: SceneLinkUnavailable }>
+  /** The link to a mode's starting view; Interception and the Route Planner share nothing else. */
+  onModeLinkRequested: (mode: LinkedMode) => string
   onSceneFileRequested: () => { readonly name: string; readonly text: string }
   onOpenSceneFile: (file: File) => void
   onConfirmSceneOpen: () => void
@@ -124,6 +133,60 @@ export interface UiCallbacks {
   onAddFeaturedPick: (catalogId: string) => Promise<AddCatalogueRecordsOutcome>
   /** Opens a curated example like a pasted scene link. */
   onOpenExample: (exampleId: string) => void
+
+  // Interception.
+  /** A burn button or key went down; the burn runs until `onBurnRelease`. */
+  onRouteTry: (id: RouteTryId) => void
+  onRouteLiveToggle: () => void
+  onRouteLiveRate: (rate: number) => void
+  /** Exit playback: back to the live scene as it was when the route's search began. */
+  onRouteExit: () => void
+  /** Plan route: pauses the live scene and opens the planning window. */
+  onRoutePlannerOpen: () => void
+  /** Closes the planning window; the live scene runs on. */
+  onRoutePlannerClose: () => void
+  onRouteDetailsBack: () => void
+  onRouteCameraView: (view: RouteCameraView) => void
+  onRouteFrameBurns: (frameBurns: boolean) => void
+  onRoutePlayDetails: () => void
+  /** Shows the route found again. */
+  onRouteViewRoute: () => void
+  onRouteObjectEdit: (side: RouteSide, changes: Partial<RouteOrbitValues>) => void
+  onRouteCircular: (side: RouteSide, circular: boolean) => void
+  onRouteTargetAhead: (aheadDeg: number) => void
+  onRouteCatalogueEnable: () => void
+  onRouteSearch: (text: string) => void
+  onRoutePick: (side: RouteSide, catalogId: string) => void
+  onRouteSwap: () => void
+  onRouteLimitTimeChange: (on: boolean) => void
+  onRouteLimitFuelChange: (on: boolean) => void
+  onRouteLimitChange: (seconds: number) => void
+  onRouteBudgetChange: (kmPerSecond: number) => void
+  onPlanRoute: () => void
+  onCancelRoute: () => void
+  onRoutePlayToggle: () => void
+  onRouteReverseChange: (reversed: boolean) => void
+  onRouteSpeedChange: (speed: RoutePlaybackSpeed) => void
+  onRouteAutoplayChange: (autoplay: boolean) => void
+  /** Moves playback to a place on the timeline, pausing it. */
+  onRouteSeek: (tau: number) => void
+  onRouteBurnStep: (direction: 1 | -1) => void
+  onRouteBurnSelect: (burnIndex: number) => void
+  /** Shows another route of the front. */
+  onRouteSelect: (index: number) => void
+  onRouteIspChange: (seconds: number) => void
+  onRouteFit: () => void
+  onRoutePlanesChange: (shown: boolean) => void
+  onBurnPress: (direction: BurnDirection) => void
+  /** Every way a held burn ends: release, a cancelled pointer, lost focus or a hidden page. */
+  onBurnRelease: () => void
+  onManeuverAidChange: (shown: boolean) => void
+  onNewManeuverGame: () => void
+  onRestartManeuverGame: () => void
+  /** The altitude view or the 3D view. */
+  onManeuverDisplayChange: (display: ManeuverDisplay) => void
+  /** Fits the view to the game again: face-on in 3D, recentred in the altitude view. */
+  onManeuverFaceOn: () => void
 
   // The phone presentation. Desktop never calls these.
   /** A mobile example card creates a new orbit from the preset. */
@@ -180,8 +243,5 @@ export interface ReadoutValues {
   }
 }
 
-export type UiState = AppState
-export type UiObject = OrbitalObject
 export type UiConstraint = ElementConstraint
 export type UiLockStatus = SunSynchronousStatus
-export type UiEnvironment = EnvironmentState

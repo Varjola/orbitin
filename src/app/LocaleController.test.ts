@@ -36,7 +36,7 @@ it('reads the remembered choice defensively and applies it with the document lan
   expect(new LocaleController(remembered).locale).toBe('fi')
   expect(remembered.documentElement.lang).toBe('fi')
   expect(activeLocale()).toBe('fi')
-  expect(text().shell.modes.orbitLab).toBe('Kiertoradan mekaniikat')
+  expect(text().shell.modes.orbitLab).toBe('Kiertoratojen elementit')
   const blocked = environment(() => { throw new Error('SecurityError') })
   expect(new LocaleController(blocked).locale).toBe('en')
   expect(blocked.documentElement.lang).toBe('en')

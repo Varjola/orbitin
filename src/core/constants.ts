@@ -1,5 +1,8 @@
 export const EARTH_RADIUS_KM = 6378.137
 export const EARTH_MU_KM3_S2 = 398600.4418
+/** Standard gravity, which converts specific impulse to exhaust velocity in
+ *  the rocket equation. */
+export const STANDARD_GRAVITY_KM_S2 = 0.00980665
 /** Second dynamic form factor, unnormalized. EGM96 (NASA/NIMA TR-1998-206861),
  *  matching the EGM96 gravitational parameter above and the WGS-84 radius.
  *  The original WGS-84 value 1.08262999e-3 differs in the seventh significant

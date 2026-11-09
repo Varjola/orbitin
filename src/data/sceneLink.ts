@@ -1,7 +1,7 @@
 import { SNAPSHOT_ID_PATTERN } from './catalogueSchema.ts'
 import { MAX_SCENE_DOCUMENT_OBJECTS, SCENE_DOCUMENT_FORMAT, type CatalogueObjectRefV1, type KeplerianObjectV1, type ManualOmmObjectV1, type ManualTleObjectV1, type ObjectPresentationV1, type RealObjectV1, type SceneDocumentError, type SceneDocumentV1 } from './sceneDocument.ts'
 import { normalizedSceneIds, sharedSceneSummary, toSharedScene } from './sharedScene.ts'
-import type { ProductMode } from '../state/AppState.ts'
+import type { SceneMode } from '../state/AppState.ts'
 
 /** The compact binary link encoding `s1`.
  *
@@ -75,7 +75,7 @@ export const MANUAL_OMM_FIELDS_V1: readonly ManualOmmField[] = Object.freeze([
 export const MANUAL_OMM_CONSTANTS_V1: Readonly<Record<string, string>> = Object.freeze({ CENTER_NAME: 'Earth', REF_FRAME: 'TEME', TIME_SYSTEM: 'UTC', MEAN_ELEMENT_THEORY: 'SGP4' })
 
 export type SceneLinkUnavailable =
-  | { readonly kind: 'over-limit'; readonly mode: ProductMode; readonly objectCount: number; readonly manualObjectCount: number }
+  | { readonly kind: 'over-limit'; readonly mode: SceneMode; readonly objectCount: number; readonly manualObjectCount: number }
   | { readonly kind: 'outside-bounds' }
 export type SceneTextFailure =
   | { readonly kind: 'malformed' }
@@ -332,11 +332,6 @@ export function sceneLinkAvailability(document: SceneDocumentV1): SceneLinkAvail
   return { ok: true }
 }
 
-/** Uncompressed body bytes of a linkable scene, or null. For size evidence and tests. */
-export function sceneLinkBodyLength(document: SceneDocumentV1): number | null {
-  try { return sceneLinkBody(document).length } catch (error) { if (error instanceof OutsideBounds) return null; throw error }
-}
-
 /** The `s1` payload. `compress: 'auto'` keeps the deflated container only when
  *  it is shorter; `'never'` and `'always'` exist for fixtures and tests. */
 export async function encodeSceneLinkPayload(document: SceneDocumentV1, options: { readonly compress?: 'auto' | 'never' | 'always' } = {}): Promise<SceneLinkPayloadResult> {
@@ -435,7 +430,7 @@ function readSceneLinkBody(body: Uint8Array): SceneDocumentV1 {
   const reader = new ByteReader(body)
   const flags = reader.u8()
   if (flags & 0xf8) throw new Malformed()
-  const mode: ProductMode = flags & 1 ? 'realObjects' : 'orbitLab'
+  const mode: SceneMode = flags & 1 ? 'realObjects' : 'orbitLab'
   const objectCount = reader.varint()
   if (objectCount > MAX_SCENE_DOCUMENT_OBJECTS) throw new Malformed()
   const selectedCount = reader.varint()

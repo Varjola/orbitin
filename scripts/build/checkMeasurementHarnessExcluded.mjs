@@ -9,7 +9,7 @@ export const HARNESS_MARKERS = ['__orbitinSceneHarness', '__orbitinSceneMeasurem
  *  its wrapper characters and builder never reach a bundle. */
 export const PSEUDO_LOCALE_MARKERS = ['pseudoCatalogue', '⟦', '⟧']
 /** Both interface languages ship in the main bundle. */
-export const LANGUAGE_MARKERS = ['Kiertoradan mekaniikat', 'Kiertoratojen kappaleet', 'orbitin.locale']
+export const LANGUAGE_MARKERS = ['Kiertoratojen elementit', 'Kiertoratojen kappaleet', 'orbitin.locale']
 /** The reviewed official groups ship in every build (approved
  *  2026-09-25); a bundle without it has lost the official group. */
 export const OFFICIAL_GROUP_MARKERS = ['gps-operational-2026-09-24', 'GPS Constellation Status', 'official-groups-2026-09-26', 'arctic-heo-2026-09-26']

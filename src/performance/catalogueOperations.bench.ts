@@ -64,6 +64,6 @@ afterAll(() => {
     const samples = allSamples.slice(-benchmarkOptions.iterations).sort((a, b) => a - b)
     const median = samples[Math.ceil(samples.length * 0.5) - 1]
     const p95 = samples[Math.ceil(samples.length * 0.95) - 1]
-    console.log(`[M0 samples] ${name}: samples=${samples.length} median=${median.toFixed(3)}ms p95=${p95.toFixed(3)}ms`)
+    console.log(`[samples] ${name}: samples=${samples.length} median=${median.toFixed(3)}ms p95=${p95.toFixed(3)}ms`)
   }
 })

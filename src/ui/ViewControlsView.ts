@@ -1,4 +1,4 @@
-import type { AppState, LookState, ProductMode, SceneState } from '../state/AppState.ts'
+import { isSceneMode, type AppState, type LookState, type ProductMode, type SceneState } from '../state/AppState.ts'
 import { text } from '../i18n/index.ts'
 import { html } from './markup.ts'
 import type { UiCallbacks } from './uiTypes.ts'
@@ -64,7 +64,8 @@ export class ViewControlsView {
     toggle.setAttribute('aria-label', drawerOpen ? text().view.collapse : text().view.expand)
     this.root.querySelector<HTMLElement>('#view-drawer-content')!.hidden = !drawerOpen
     this.root.querySelector<HTMLInputElement>('#marker-scaling-toggle')!.checked = view.scaleMarkersWithZoom
-    this.root.querySelector<HTMLButtonElement>('#ground-track-map-open')!.disabled = loading || view.groundTrackMapVisible
+    // The game is about one orbital plane; it has no ground tracks to map.
+    this.root.querySelector<HTMLButtonElement>('#ground-track-map-open')!.disabled = loading || view.groundTrackMapVisible || !isSceneMode(mode)
     this.syncSceneToggle('#all-orbit-paths-toggle', scene, loading, (object) => object.display.orbitPathVisible)
     this.syncSceneToggle('#all-ground-track-histories-toggle', scene, loading, (object) => object.display.groundTrackHistoryRecording)
     this.syncSceneToggle('#all-sensor-geometries-toggle', scene, loading, (object) => object.display.sensorGeometryVisible)

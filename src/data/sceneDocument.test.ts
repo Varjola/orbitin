@@ -5,7 +5,7 @@ import { parseOmmJson } from './omm.ts'
 import { parseTle } from './tle.ts'
 import { sceneObjectFromCatalogueRecord } from '../app/catalogueToScene.ts'
 import { createInitialState } from '../state/initialState.ts'
-import { PRODUCT_MODES, withScene, type AppState } from '../state/AppState.ts'
+import { SCENE_MODES, withScene, type AppState } from '../state/AppState.ts'
 import type { OrbitalObject } from '../simulation/OrbitalObject.ts'
 import { defaultGroundReachConstraint, defaultSensorDefinition } from '../simulation/sensorFootprint.ts'
 import { decodeSceneDocument, DOCUMENT_MODES, encodeSceneDocument, sceneDocumentCatalogueIds, serializeSceneDocument, type SceneDocumentV1 } from './sceneDocument.ts'
@@ -58,7 +58,8 @@ it('round-trips every source kind with stable output and exact selection fidelit
   expect(serializeSceneDocument(encodeSceneDocument(richState(), { includeSimulation: true }))).toBe(serialized)
   expect(serialized).not.toMatch(/"provenance"|"source"|"derived"|"automatic"|"groups"/)
   expect(encodeSceneDocument(state, { includeSimulation: false }).simulation).toBeNull()
-  expect(DOCUMENT_MODES).toEqual(PRODUCT_MODES)
+  // Only modes with a scene are shared; Interception is not.
+  expect(DOCUMENT_MODES).toEqual(SCENE_MODES)
 })
 
 it('rejects unknown keys, invalid values and broken selection invariants with precise paths', () => {

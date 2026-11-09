@@ -53,6 +53,8 @@ export interface LocaleFormat {
   /** The cardinal letter of a signed angle, or '' at zero after rounding. */
   hemisphere(value: number, axis: 'latitude' | 'longitude', decimals: number): string
   duration(seconds: number): string
+  /** A whole number of minutes: `10m` or `10 min`. */
+  minutes(value: number): string
   solarTime(hours: number): string
   speedMultiplier(value: number): string
   list(items: readonly string[]): string
@@ -121,6 +123,7 @@ export function createFormatter(locale: DisplayLocale, units: UnitWords): Locale
       const minutes = Math.floor((seconds % 3600) / 60)
       return hours > 0 ? `${unit(hours, units.hour)} ${unit(minutes, units.minute)}` : `${unit(minutes, units.minute)} ${unit(Math.floor(seconds % 60), units.second)}`
     },
+    minutes: (value) => unit(value, units.minute),
     solarTime: (hours) => {
       const total = Math.round(((hours % 24) + 24) % 24 * 60) % (24 * 60)
       return `${String(Math.floor(total / 60)).padStart(2, '0')}${units.clockSeparator}${String(total % 60).padStart(2, '0')}`

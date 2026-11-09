@@ -5,6 +5,7 @@
 export type MobileIcon =
   | 'play' | 'pause' | 'plus' | 'edit' | 'menu' | 'close' | 'layers' | 'fit' | 'map' | 'globe'
   | 'list' | 'previous' | 'next' | 'remove' | 'focus' | 'share' | 'help' | 'info' | 'language' | 'search' | 'expand' | 'minus'
+  | 'swap' | 'camera' | 'planes' | 'route' | 'stop' | 'upright'
 
 const PATHS: Readonly<Record<MobileIcon, string>> = {
   play: '<path class="is-filled" d="M8 5.2v13.6L19 12Z"/>',
@@ -29,6 +30,12 @@ const PATHS: Readonly<Record<MobileIcon, string>> = {
   language: '<path d="M4 6h9M8.5 4v2M6 6c.5 3 2.5 5.5 5.5 7M11 6c-.7 3.3-2.8 6-6.5 7.5"/><path d="m12.5 20 3.5-8.5 3.5 8.5M13.8 17h4.4"/>',
   search: '<circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 5 5"/>',
   expand: '<path d="m6 14 6-6 6 6"/>',
+  swap: '<path d="M8 19V5M4.5 8.5 8 5l3.5 3.5M16 5v14M12.5 15.5 16 19l3.5-3.5"/>',
+  camera: '<path d="M3.5 8.5h3.5l1.6-2.5h6.8l1.6 2.5h3.5v10.5h-17Z"/><circle cx="12" cy="13.5" r="3.3"/>',
+  planes: '<ellipse cx="12" cy="12" rx="9" ry="3.6"/><ellipse cx="12" cy="12" rx="9" ry="3.6" transform="rotate(-38 12 12)"/>',
+  upright: '<rect x="8.5" y="3.5" width="9" height="15" rx="1.8"/><path d="M11.8 15.8h2.4"/><path d="M3.5 9.5a7 7 0 0 1 3-4.8"/><path d="m3 6.5 0.5 3 3-0.6"/>',
+  stop: '<rect class="is-filled" x="6.5" y="6.5" width="11" height="11" rx="1.5"/>',
+  route: '<circle cx="5.5" cy="17.5" r="2"/><circle cx="18.5" cy="6.5" r="2"/><path d="M7.3 16.4C11 14 9 9.5 13 8.3l3.6-1.1"/>',
 }
 
 /** The icon's SVG markup, decorative. */
