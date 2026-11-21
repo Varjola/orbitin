@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import frontendWorker, { type FrontendWorkerEnv } from './index.ts'
+import { STALE_PAGE_RECOVERY_SCRIPT } from './staleEntry.ts'
 import { browserFamily } from './usageEventSchema.ts'
 import { CatalogueClient } from '../../src/data/CatalogueClient.ts'
 import { buildAutomaticSnapshotFixture, servedSnapshotPayloads } from '../../src/data/fixtures/automaticCatalogueSnapshot.ts'
@@ -212,5 +213,106 @@ describe('the anonymous usage event sink', () => {
     expect(browserFamily('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36 Edg/140.0')).toBe('edge')
     expect(browserFamily('Mozilla/5.0 (Linux; Android 14; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/140.0 Mobile Safari/537.36')).toBe('android-webview')
     expect(browserFamily(null)).toBe('other')
+  })
+})
+
+describe('a page bundle from an earlier release', () => {
+  const notFound = async () => new Response('<!doctype html><title>Page not found</title>', { status: 404, headers: { 'Content-Type': 'text/html' } })
+
+  it('answers a missing page bundle with the recovery script, never cached', async () => {
+    const env = environment(readableBucket(new Map()).bucket, notFound)
+    const response = await frontendWorker.fetch(new Request('https://orbitin.test/assets/index-CmAqMk-l.js'), env, context)
+    expect(response.status).toBe(200)
+    expect(response.headers.get('Content-Type')).toBe('text/javascript; charset=utf-8')
+    expect(response.headers.get('Cache-Control')).toBe('no-store')
+    expect(await response.text()).toBe(STALE_PAGE_RECOVERY_SCRIPT)
+    const head = await frontendWorker.fetch(new Request('https://orbitin.test/assets/index-CmAqMk-l.js', { method: 'HEAD' }), env, context)
+    expect(head.status).toBe(200)
+    expect(await head.text()).toBe('')
+  })
+
+  it('serves the current page bundle unchanged', async () => {
+    const assetFetch = vi.fn(async () => new Response('bundle', { headers: { 'Content-Type': 'text/javascript' } }))
+    const env = environment(readableBucket(new Map()).bucket, assetFetch)
+    const response = await frontendWorker.fetch(new Request('https://orbitin.test/assets/index-fAHt1dWu.js'), env, context)
+    expect(await response.text()).toBe('bundle')
+  })
+
+  it('keeps the 404 for every other missing file', async () => {
+    const env = environment(readableBucket(new Map()).bucket, notFound)
+    for (const path of ['/assets/index-dBvYJfxE.css', '/assets/routeSolver.worker-CdEZMHGK.js', '/assets/basis_transcoder-o4Hde_L7.js', '/assets/index-x/y.js', '/index-CmAqMk-l.js', '/missing']) {
+      expect((await frontendWorker.fetch(new Request(`https://orbitin.test${path}`), env, context)).status).toBe(404)
+    }
+  })
+})
+
+describe('the stale page recovery script', () => {
+  interface FakeElement {
+    readonly tag: string
+    textContent: string
+    type: string
+    readonly style: { cssText: string }
+    readonly children: FakeElement[]
+    readonly listeners: Map<string, () => void>
+    focused: boolean
+    setAttribute(name: string, value: string): void
+    append(...nodes: FakeElement[]): void
+    replaceChildren(...nodes: FakeElement[]): void
+    addEventListener(type: string, listener: () => void): void
+    focus(): void
+  }
+
+  function element(tag: string): FakeElement {
+    const node: FakeElement = {
+      tag, textContent: '', type: '', style: { cssText: '' }, children: [], listeners: new Map(), focused: false,
+      setAttribute() {},
+      append(...nodes) { node.children.push(...nodes) },
+      replaceChildren(...nodes) { node.children.splice(0, node.children.length, ...nodes) },
+      addEventListener(type, listener) { node.listeners.set(type, listener) },
+      focus() { node.focused = true },
+    }
+    return node
+  }
+
+  function run(options: { navigation?: string | null; legacyType?: number; locale?: string | null; storageThrows?: boolean }) {
+    const root = element('div')
+    const document = { readyState: 'complete', getElementById: () => root, body: element('body'), createElement: element, addEventListener() {} }
+    const performance = {
+      getEntriesByType: options.navigation === undefined ? undefined : () => (options.navigation === null ? [] : [{ type: options.navigation }]),
+      navigation: options.legacyType === undefined ? undefined : { type: options.legacyType },
+    }
+    const location = { reload: vi.fn() }
+    const localStorage = { getItem: () => { if (options.storageThrows) throw new Error('blocked'); return options.locale ?? null } }
+    new Function('document', 'performance', 'location', 'localStorage', STALE_PAGE_RECOVERY_SCRIPT)(document, performance, location, localStorage)
+    return { root, location }
+  }
+
+  it.each(['navigate', 'back_forward', 'prerender'])('reloads once after a %s', (navigation) => {
+    const { root, location } = run({ navigation })
+    expect(location.reload).toHaveBeenCalledTimes(1)
+    expect(root.children).toEqual([])
+  })
+
+  it('falls back to the older navigation timing', () => {
+    expect(run({ legacyType: 0 }).location.reload).toHaveBeenCalledTimes(1)
+    expect(run({ legacyType: 1 }).location.reload).not.toHaveBeenCalled()
+  })
+
+  it('shows a Reload button instead of reloading again or when the browser cannot tell', () => {
+    for (const options of [{ navigation: 'reload' }, { navigation: null }, {}]) {
+      const { root, location } = run(options)
+      expect(location.reload).not.toHaveBeenCalled()
+      const card = root.children[0]
+      expect(card.children.map((child) => child.textContent)).toEqual(['Orbitin has been updated', 'Reload the page to open the new version.', 'Reload'])
+      const button = card.children[2]
+      expect(button.focused).toBe(true)
+      button.listeners.get('click')!()
+      expect(location.reload).toHaveBeenCalledTimes(1)
+    }
+  })
+
+  it('speaks Finnish when the learner chose it, and English when storage is blocked', () => {
+    expect(run({ navigation: 'reload', locale: 'fi' }).root.children[0].children[0].textContent).toBe('Orbitin on päivittynyt')
+    expect(run({ navigation: 'reload', locale: 'fi', storageThrows: true }).root.children[0].children[0].textContent).toBe('Orbitin has been updated')
   })
 })

@@ -72,7 +72,7 @@ test('C4 frontend configurations are explicit apart from approved preview settin
     const result = await resolved(name)
     const isDevelopment = name === 'wrangler.orbitin-dev.jsonc'
     assert.match(result.main, /workers[\\/]frontend[\\/]index\.ts$/)
-    assert.deepEqual(result.assets, { directory: './dist', binding: 'ASSETS', not_found_handling: '404-page', run_worker_first: ['/catalog/*', '/events/*'] })
+    assert.deepEqual(result.assets, { directory: './dist', binding: 'ASSETS', not_found_handling: '404-page', run_worker_first: ['/catalog/*', '/events/*', '/assets/index-*'] })
     // The anonymous event sink writes to one dataset per Worker.
     assert.deepEqual(config.analytics_engine_datasets, [{ binding: 'USAGE_EVENTS', dataset: isDevelopment ? 'orbitin_dev_events' : 'orbitin_events' }])
     assert.deepEqual(config.triggers?.crons, [])
