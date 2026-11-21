@@ -168,7 +168,7 @@ it('keeps catalogue exploration independent of simulation and rendering layers',
 
 it('keeps frontend runtime reachability limited to its shared serving closure', () => {
   const entry = '../../workers/frontend/index.ts'
-  const expected = new Set([entry, '../../workers/frontend/usageEventSchema.ts', '../../workers/shared/serve.ts', '../../workers/shared/types.ts'])
+  const expected = new Set([entry, '../../workers/frontend/staleEntry.ts', '../../workers/frontend/usageEventSchema.ts', '../../workers/shared/serve.ts', '../../workers/shared/types.ts'])
   const seen = new Set<string>()
   const pending = [entry]
   while (pending.length > 0) {

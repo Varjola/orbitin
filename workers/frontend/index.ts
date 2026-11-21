@@ -1,5 +1,6 @@
 import { serveCatalogueRequest } from '../shared/serve.ts'
 import type { AnalyticsEngineDatasetLike, R2ReadableBucketLike, WorkerAssets, WorkerExecutionContext } from '../shared/types.ts'
+import { isPageBundlePath, stalePageRecoveryResponse } from './staleEntry.ts'
 import { browserFamily, MAX_EVENT_BODY_BYTES, parseUsageBatch } from './usageEventSchema.ts'
 
 /** Environment of the orbitin and orbitin-dev frontend Workers. It carries no
@@ -20,7 +21,10 @@ export default {
     const url = new URL(request.url)
     if (url.pathname.startsWith('/catalog/')) return serveCatalogueRequest(request, env.CATALOGUE_BUCKET, context)
     if (url.pathname === USAGE_EVENTS_PATH) return receiveUsageEvents(request, env)
-    return env.ASSETS.fetch(request)
+    const asset = await env.ASSETS.fetch(request)
+    // An earlier release's page bundle, asked for by a page the browser kept.
+    if (asset.status === 404 && isPageBundlePath(url.pathname)) return stalePageRecoveryResponse(request.method)
+    return asset
   },
 }
 

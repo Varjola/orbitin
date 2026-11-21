@@ -4,6 +4,17 @@ Versions follow `x.y.z`, set in the repository-root `VERSION` file: `x` is a
 major release, `y` a feature release and `z` a fix release. An overview is
 published at [orbitin.net/changelog](https://orbitin.net/changelog).
 
+## 1.1.1
+
+### Loading
+
+- A page that the browser kept from an earlier version no longer stays on its
+  first loading screen. iOS Safari can show a saved copy of the page, for
+  example when it restores a tab, and that copy asked for files that the new
+  version had replaced. Orbitin now reloads such a page once by itself to
+  open the current version, or, if it has already been reloaded, says that
+  Orbitin has been updated and offers a Reload button.
+
 ## 1.1.0
 
 ### Choosing a mode
